@@ -1,0 +1,7 @@
+﻿services:
+  clubcheckapi:
+    image: clubcheckapi
+    build:
+      context: .
+      dockerfile: ClubCheckAPI/Dockerfile
+
