@@ -1,7 +1,27 @@
 ﻿services:
   clubcheckapi:
-    image: clubcheckapi
+    image: backend:latest
     build:
       context: .
       dockerfile: ClubCheckAPI/Dockerfile
+    environment:
+      DB_CONN_STRING: ${DB_CONN_STRING_CONTAINER}
+    ports:
+      - "30021:8080"
+    
+    
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
 
