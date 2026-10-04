@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClubCheckAPI.Models;
 
-[NotMapped]
+// [ComplexType]
 public class Price
 {
     [Precision(8, 2)] public decimal Value { get; set; }

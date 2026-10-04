@@ -2,7 +2,15 @@ GET http://localhost:8080/health
 Accept: application/json
 
 ###
+GET http://localhost:8080/health-db
+Accept: application/json
+
+###
 GET http://localhost:30021/health
+Accept: application/json
+
+###
+GET http://localhost:30021/health-db
 Accept: application/json
 
 

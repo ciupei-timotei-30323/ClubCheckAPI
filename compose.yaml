@@ -4,6 +4,8 @@
     build:
       context: .
       dockerfile: ClubCheckAPI/Dockerfile
+    environment:
+      DB_CONN_STRING: ${DB_CONN_STRING_CONTAINER}
     ports:
       - "30021:8080"
     
@@ -20,7 +22,6 @@
       POSTGRES_PASSWORD: ${DB_PASSWD}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
-      
     ports:
-      - "8081:5432"
+      - "5432:5432"
 

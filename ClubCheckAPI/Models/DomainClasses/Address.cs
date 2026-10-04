@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClubCheckAPI.Models;
 
-[NotMapped]
+// [ComplexType]
 public class Address
 {
     public Address(string city = "-")
@@ -15,13 +15,13 @@ public class Address
 
     [MaxLength(5)] public string? Number { get; set; }
 
-    [MaxLength(50)] public string? Street { get; set; }
+    [MaxLength(100)] public string? Street { get; set; }
 
-    [MaxLength(50)] public string City { get; set; }
+    [MaxLength(100)] public string City { get; set; }
 
-    [MaxLength(50)] public string? County { get; set; }
+    [MaxLength(100)] public string? County { get; set; }
 
-    [MaxLength(50)] public string? Country { get; set; }
+    [MaxLength(100)] public string? Country { get; set; }
 
     public Uri? GoogleMapsUrl { get; set; }
 

@@ -72,3 +72,6 @@ nunit-*.xml
 /dataSources/
 /dataSources.local.xml
 /.idea
+
+
+/Models/Relationships.txt

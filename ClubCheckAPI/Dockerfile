@@ -33,7 +33,7 @@ RUN dotnet restore
 COPY "ClubCheckAPI" .
 RUN dotnet publish -c release -o /app
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
 WORKDIR /app
 EXPOSE 8080

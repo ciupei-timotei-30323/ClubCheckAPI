@@ -4,13 +4,15 @@ namespace ClubCheckAPI.Models;
 
 public class Preferences
 {
-    public int Id { get; set; }
-
+    
+    
+    // No two preferences for one user
+    [Key]
     public int UserId { get; set; }
     public User User { get; set; }
 
 
-    [MaxLength(50)] public string City { get; set; }
+    [MaxLength(100)] public string City { get; set; }
 
     // public string Country { get; set; }
 
