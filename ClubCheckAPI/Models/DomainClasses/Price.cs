@@ -6,8 +6,7 @@ namespace ClubCheckAPI.Models;
 [NotMapped]
 public class Price
 {
-    [Precision(8,2)]
-    public decimal Value { get; set; }
+    [Precision(8, 2)] public decimal Value { get; set; }
     public Currency? Currency { get; set; }
 
     /// <summary>
@@ -15,7 +14,7 @@ public class Price
     /// </summary>
     /// <param name="value"></param>
     /// <param name="currency">Default value is RON</param>
-    public Price(decimal value, Currency? currency=Models.Currency.RON)
+    public Price(decimal value, Currency? currency = Models.Currency.RON)
     {
         Value = value;
         Currency = currency;

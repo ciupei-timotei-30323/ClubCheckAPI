@@ -6,5 +6,4 @@ public enum Currency
     RON,
     USD,
     HUF
-    
 }

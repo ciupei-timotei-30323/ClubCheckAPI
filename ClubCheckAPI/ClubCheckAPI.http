@@ -1,4 +1,11 @@
-@ClubCheckAPI_HostAddress = http://localhost:5050
+GET http://localhost:8080/health
+Accept: application/json
+
+###
+GET http://localhost:30021/health
+Accept: application/json
+
 
 
 ###
+
