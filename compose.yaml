@@ -5,7 +5,10 @@
       context: .
       dockerfile: ClubCheckAPI/Dockerfile
     environment:
-      DB_CONN_STRING: ${DB_CONN_STRING_CONTAINER}
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DefaultConnection=${DB_CONN_STRING_CONTAINER}
+    depends_on:
+      - db
     ports:
       - "30021:8080"
     
