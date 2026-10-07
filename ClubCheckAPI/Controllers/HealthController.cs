@@ -1,19 +1,21 @@
+using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;
 
-public class HealthController : ControllerBase
+public class HealthController(ILogger<HealthController> _logger, 
+    ClubCheckAPIContext _db) : ControllerBase
 {
     
-    private readonly ILogger<HealthController> _logger;
-    private readonly ClubCheckAPIContext _db;
-    
-    public HealthController(ILogger<HealthController> logger,  ClubCheckAPIContext db)
-    {
-        _logger = logger;
-        _db = db;
-    }
+    // private readonly ILogger<HealthController> _logger;
+    // private readonly ClubCheckAPIContext _db;
+    //
+    // public HealthController(ILogger<HealthController> logger,  ClubCheckAPIContext db)
+    // {
+    //     _logger = logger;
+    //     _db = db;
+    // }
     
     [HttpGet("health")]
     public ActionResult GetHealth()
@@ -31,7 +33,8 @@ public class HealthController : ControllerBase
             _logger.LogInformation("DB is connected!");
             return Ok("DB is connected!");
         }
-        return Ok("DB is not connected!");
+
+        throw new DbNotConnectedException(_db.ContextId.ToString());
     }
     
 }
