@@ -5,11 +5,11 @@ namespace ClubCheckAPI.Exceptions;
 
 public sealed class DbNotConnectedException : AppException
 {
-    public DbNotConnectedException(string dbId,
-        HttpStatusCode statusCode = HttpStatusCode.FailedDependency) : base(
+    public DbNotConnectedException(string dbId
+    ) : base(
         publicMessage: "Database offline",
-        internalMessage: $"DB with ID [{dbId}] is offline", 
-        statusCode)
+        internalMessage: $"DB with ID [{dbId}] is offline",
+        statusCode: HttpStatusCode.ServiceUnavailable)
     {
     }
 }
