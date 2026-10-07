@@ -1,7 +1,12 @@
+using ClubCheckAPI.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using ClubCheckAPI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Adding ProblemDetails and GlobalExceptionHandler
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Add services to the container.
 // Adding the Database connection
@@ -29,6 +34,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+
+app.UseExceptionHandler();
 app.Logger.LogInformation("Starting Application...");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
