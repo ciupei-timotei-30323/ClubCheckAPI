@@ -1,6 +1,7 @@
 using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClubCheckAPI.Controllers;
 
@@ -21,6 +22,7 @@ public class HealthController(ILogger<HealthController> _logger,
     public ActionResult GetHealth()
     {
         _logger.LogInformation("Health controller called!");
+        
         return Ok("working...");
     }
 
@@ -34,6 +36,7 @@ public class HealthController(ILogger<HealthController> _logger,
             return Ok("DB is connected!");
         }
 
+        _logger.LogError("DB [{dbInfo}] is offline ", _db.Database.GetConnectionString());
         throw new DbNotConnectedException(_db.ContextId.ToString());
     }
     
