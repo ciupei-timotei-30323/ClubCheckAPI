@@ -1,4 +1,4 @@
-using ClubCheckAPI.Models;
+using ClubCheckAPI.DTO;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
 namespace ClubCheckAPI.Controllers;
@@ -10,7 +10,6 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// <summary>
     /// FOr batch retrieval of Events based on a query
     /// </summary>
-    /// <param name="query"></param>
     /// <returns></returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -23,7 +22,6 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// <summary>
     /// For retreival of a single Event object using its id 
     /// </summary>
-    /// <param name="id">ID of the Event</param>
     /// <returns></returns>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
