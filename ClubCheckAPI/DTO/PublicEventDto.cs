@@ -11,9 +11,6 @@ public record PublicEventDto()
     [Required]
     public required DateTime StartDate { get; set; }
     
-    [Required]
-    public bool IsActive { get; set; }
-    
     [MaxLength(800)]
     public string? Description { get; set; }
     
@@ -26,4 +23,5 @@ public record PublicEventDto()
     
     // Connection with other DTO's
     // TODO
+    
 }

@@ -31,6 +31,10 @@ public class EventsController(IEventService service, ILogger<EventsController> l
         return Ok(await service.GetEventById(id, ct));
     }
     
+    /// <summary>
+    /// Creates an Event
+    /// </summary>
+    /// <returns>The Created Event</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<PublicEventDto>> CreateEvent([FromBody] CreateEventDto eventDto, CancellationToken ct)
@@ -40,6 +44,11 @@ public class EventsController(IEventService service, ILogger<EventsController> l
         return CreatedAtAction(nameof(GetEvent), new {id = created.Id},  created);
     }
 
+    
+    /// <summary>
+    /// Deletes an event 
+    /// </summary>
+    /// <returns></returns>
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -50,6 +59,10 @@ public class EventsController(IEventService service, ILogger<EventsController> l
         return NoContent();
     }
 
+    /// <summary>
+    /// Updates an EVent based on its iD 
+    /// </summary>
+    /// <returns></returns>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicEventDto>> UpdateEvent([FromBody] UpdateEventDto eventDto, [FromRoute] int id, CancellationToken ct)
