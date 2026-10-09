@@ -1,11 +1,11 @@
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-
+using ClubCheckAPI.IServices;
 namespace ClubCheckAPI.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class EventsController(IServiceEvent service, ILogger<EventsController> logger) : ControllerBase
+public class EventsController(IEventService service, ILogger<EventsController> logger) : ControllerBase
 {
     /// <summary>
     /// FOr batch retrieval of Events based on a query
@@ -54,7 +54,7 @@ public class EventsController(IServiceEvent service, ILogger<EventsController> l
 
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PublicEventDto>> UpdateEvent([FromBody] UpdatedEventDto eventDto, [FromRoute] int id, CancellationToken ct)
+    public async Task<ActionResult<PublicEventDto>> UpdateEvent([FromBody] UpdateEventDto eventDto, [FromRoute] int id, CancellationToken ct)
     {
         logger.LogInformation("Updating event {id} as {eventDto}", id, eventDto);
         return Ok(await service.UpdateEvent(eventDto, id, ct));
