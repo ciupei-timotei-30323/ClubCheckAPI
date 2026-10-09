@@ -1,4 +1,4 @@
-using ClubCheckAPI.DTO;
+using ClubCheckAPI.DTO.Event;
 
 namespace ClubCheckAPI.IServices;
 

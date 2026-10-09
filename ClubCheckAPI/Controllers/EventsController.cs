@@ -1,4 +1,4 @@
-using ClubCheckAPI.DTO;
+using ClubCheckAPI.DTO.Event;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
 namespace ClubCheckAPI.Controllers;

@@ -1,5 +1,4 @@
-using ClubCheckAPI.DTO;
-using ClubCheckAPI.Models;
+using ClubCheckAPI.IServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;

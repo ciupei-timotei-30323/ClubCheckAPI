@@ -1,4 +1,4 @@
-namespace ClubCheckAPI.DTO;
+namespace ClubCheckAPI.DTO.Event;
 
 public record DeleteEventsQuery()
 {

@@ -1,6 +1,6 @@
 using ClubCheckAPI.Models;
 
-namespace ClubCheckAPI.DTO;
+namespace ClubCheckAPI.DTO.Event;
 
 public record UpdateEventDto()
 {
