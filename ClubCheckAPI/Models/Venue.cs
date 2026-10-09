@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+using ClubCheckAPI.DomainClasses;
 
 namespace ClubCheckAPI.Models;
 
@@ -13,7 +13,7 @@ public class Venue
 
 
 
-    public Uri? GoogleMapsUrl { get; set; }
+    // public Uri? GoogleMapsUrl { get; set; }
     
     public ICollection<Event>? Events { get; set; }
 

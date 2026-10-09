@@ -39,6 +39,7 @@ public sealed class GlobalExceptionHandler(
     private static (int statusCode, string title) MapException(Exception exception) => exception switch
     {
         AppException appException => ((int)appException.StatusCode, appException.PublicMessage),
+        NotImplementedException notImplementedException => ((int)HttpStatusCode.NotImplemented, notImplementedException.Message),
         ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
         UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
         _ => (StatusCodes.Status500InternalServerError, "An internal error occured")

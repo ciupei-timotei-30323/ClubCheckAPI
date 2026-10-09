@@ -1,4 +1,4 @@
-using ClubCheckAPI.DTO;
+using ClubCheckAPI.DTO.Event;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
 namespace ClubCheckAPI.Controllers;
@@ -68,7 +68,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     public async Task<ActionResult<PublicEventDto>> UpdateEvent([FromBody] UpdateEventDto eventDto, [FromRoute] int id, CancellationToken ct)
     {
         logger.LogInformation("Updating event {id} as {eventDto}", id, eventDto);
-        return Ok(await service.UpdateEvent(eventDto, id, ct));
+        return await service.UpdateEvent(eventDto, id, ct);
     }
     
 }
