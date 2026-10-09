@@ -9,7 +9,7 @@ public class Artist
 
     [MaxLength(150)] public string Name { get; set; }
 
-    public ICollection<User>? FollowingUsers { get; set; }
+    // public ICollection<User>? FollowingUsers { get; set; }
 
     public ICollection<Event>? Events { get; set; }
     

@@ -17,8 +17,8 @@ public class Venue
     
     public ICollection<Event>? Events { get; set; }
 
-    public ICollection<Review>? Reviews { get; set; }
+    // public ICollection<Review>? Reviews { get; set; }
 
-    public ICollection<User>? FollowingUsers { get; set; }
+    // public ICollection<User>? FollowingUsers { get; set; }
     
 }

@@ -19,8 +19,7 @@ public record PublicVenueDetailedDto()
     
     public ICollection<EventSummaryDto>? EventSummary { get; set; }
     
-    // TODO
-    public ICollection<ReviewSummaryDto>?  ReviewSummary { get; set; }
+    // public ICollection<ReviewSummaryDto>?  ReviewSummary { get; set; }
     
     
 }

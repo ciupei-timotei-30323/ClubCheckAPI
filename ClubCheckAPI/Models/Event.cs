@@ -18,7 +18,7 @@ public class Event
 
     public ICollection<Artist> Artists { get; set; }
 
-    public ICollection<User>? FollowingUsers { get; set; }
+    // public ICollection<User>? FollowingUsers { get; set; }
 
     public ICollection<Genre>? Genres { get; set; }
 
