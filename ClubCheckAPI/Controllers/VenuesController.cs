@@ -1,3 +1,4 @@
+using ClubCheckAPI.DTO.Venue;
 using ClubCheckAPI.IServices;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
 
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PublicVenueDto>> GetVenueById([FromRoute] int id, CancellationToken ct)
+    public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueById([FromRoute] int id, CancellationToken ct)
     {
         logger.LogInformation("Getting venue {id}", id);
         return Ok(service.GetVenueById(id, ct));

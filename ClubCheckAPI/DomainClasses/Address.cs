@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ClubCheckAPI.Models;
+namespace ClubCheckAPI.DomainClasses;
 
 // [ComplexType]
 public class Address

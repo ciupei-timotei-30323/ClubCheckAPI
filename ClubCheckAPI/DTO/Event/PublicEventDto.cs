@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ClubCheckAPI.DTO.Venue;
 using ClubCheckAPI.Models;
 
 namespace ClubCheckAPI.DTO.Event;
@@ -24,4 +25,6 @@ public record PublicEventDto()
     // Connection with other DTO's
     // TODO
     
+    [Required]
+    public required VenueSummaryDto Venue { get; set; }
 }

@@ -24,8 +24,4 @@
       </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="DTO\Venue\" />
-    </ItemGroup>
-
 </Project>
