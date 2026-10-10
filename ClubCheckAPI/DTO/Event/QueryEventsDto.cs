@@ -1,7 +1,5 @@
 using ClubCheckAPI.DomainClasses;
-using ClubCheckAPI.DTO.Artist;
-using ClubCheckAPI.DTO.Genre;
-using ClubCheckAPI.DTO.Venue;
+
 
 namespace ClubCheckAPI.DTO.Event;
 
