@@ -10,7 +10,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     Log.Information("Starting up...");
-    
+
     var builder = WebApplication.CreateBuilder(args);
 
 // Adding ProblemDetails and GlobalExceptionHandler
@@ -21,6 +21,7 @@ try
 // Adding the Database connection
     var connString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+    Log.Information("Connecting to database...");
     builder.Services.AddDbContext<ClubCheckAPIContext>(options => options.UseNpgsql(connString,
 
         // This enables retry on dead connections
@@ -33,7 +34,7 @@ try
         }
     ));
 
-
+    
     builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     builder.Services.AddOpenApi();

@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Core;
 
 namespace ClubCheckAPI.Models;
 
@@ -29,4 +31,6 @@ public class ClubCheckAPIContext : DbContext
         
         
     }
+    
+    
 }

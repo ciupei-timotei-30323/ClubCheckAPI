@@ -72,6 +72,5 @@ nunit-*.xml
 /dataSources/
 /dataSources.local.xml
 /.idea
+/.aiassistant/
 
-
-/Models/Relationships.txt
