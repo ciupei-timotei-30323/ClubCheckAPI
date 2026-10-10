@@ -14,5 +14,9 @@ public record UpdateEventDto()
     public Uri? AnnouncementUrl { get; set; }
     
     // Connection with other DTO's
-    // TODO
+    public int? VenueId {get; set;} 
+    
+    public ICollection<int>? GenresId { get; set; }
+    
+    public ICollection<int>? ArtistsId { get; set; }
 }

@@ -13,6 +13,10 @@ public record PublicEventDto()
     public required int Id { get; set; }
     
     [Required]
+    [MaxLength(100)]
+    public required string Name { get; set; }
+    
+    [Required]
     public required DateTime StartDate { get; set; }
     
     [MaxLength(800)]
@@ -28,9 +32,9 @@ public record PublicEventDto()
     // Connection with other DTO's
     
     [Required]
-    public required VenueSummaryDto Venue { get; set; }
+    public required string VenueName { get; set; }
     
-    public ICollection<GenreSummaryDto>? Genres { get; set; }
+    public ICollection<string>? GenresName { get; set; }
     
-    public ICollection<ArtistSummaryDto>? Artists { get; set; }
+    public ICollection<string>? ArtistsName { get; set; }
 }
