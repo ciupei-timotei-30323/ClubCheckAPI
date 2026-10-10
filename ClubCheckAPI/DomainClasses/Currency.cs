@@ -1,4 +1,4 @@
-namespace ClubCheckAPI.Models;
+namespace ClubCheckAPI.DomainClasses;
 
 public enum Currency
 {

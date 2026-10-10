@@ -1,3 +1,4 @@
+using ClubCheckAPI.DomainClasses;
 using ClubCheckAPI.Models;
 
 namespace ClubCheckAPI.DTO.Event;

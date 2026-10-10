@@ -1,7 +1,7 @@
-using System.ComponentModel.DataAnnotations.Schema;
+using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace ClubCheckAPI.Models;
+namespace ClubCheckAPI.DomainClasses;
 
 // [ComplexType]
 public class Price
@@ -14,7 +14,7 @@ public class Price
     /// </summary>
     /// <param name="value"></param>
     /// <param name="currency">Default value is RON</param>
-    public Price(decimal value, Currency? currency = Models.Currency.RON)
+    public Price(decimal value, Currency? currency = DomainClasses.Currency.RON)
     {
         Value = value;
         Currency = currency;
