@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ClubCheckAPI.DomainClasses;
+using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Genre;
 using ClubCheckAPI.DTO.Venue;
 using ClubCheckAPI.Models;
@@ -25,10 +26,11 @@ public record PublicEventDto()
     
     
     // Connection with other DTO's
-    // TODO
     
     [Required]
     public required VenueSummaryDto Venue { get; set; }
     
-    public GenreSummaryDto? Genre { get; set; }
+    public ICollection<GenreSummaryDto>? Genres { get; set; }
+    
+    public ICollection<ArtistSummaryDto>? Artists { get; set; }
 }
