@@ -29,7 +29,21 @@ public class ClubCheckAPIContext : DbContext
         modelBuilder.Entity<Event>()
             .ComplexProperty(v => v.Price);
         
+        modelBuilder.Entity<Artist>()
+            .HasIndex(a => a.Name)
+            .IsUnique();
         
+        modelBuilder.Entity<Venue>()
+            .HasIndex(v => v.Name)
+            .IsUnique();
+        
+        modelBuilder.Entity<Genre>()
+            .HasIndex(g => g.Name)
+            .IsUnique();
+        
+        modelBuilder.Entity<Event>()
+            .HasIndex(e => e.Name)
+            .IsUnique();
     }
     
     
