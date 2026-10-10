@@ -4,9 +4,9 @@ namespace ClubCheckAPI.IServices;
 
 public interface IVenueService
 {
-    public Task<ICollection<PublicVenueDto>> GetVenues(QueryVenuesDto queryDto, CancellationToken ct);
+    // public Task<ICollection<PublicVenueDto>> GetVenues(QueryVenuesDto queryDto, CancellationToken ct);
     
-    public Task<PublicVenueDetailedDto> GetVenueById(int id, CancellationToken ct);
+    public Task<PublicVenueDetailedDto> GetVenueByName(string name, CancellationToken ct);
     
     public Task<PublicVenueDto> CreateVenue(CreateVenueDto  venueDto, CancellationToken ct );
     

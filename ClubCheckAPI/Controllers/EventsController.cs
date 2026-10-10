@@ -8,7 +8,13 @@ namespace ClubCheckAPI.Controllers;
 public class EventsController(IEventService service, ILogger<EventsController> logger) : ControllerBase
 {
     /// <summary>
-    /// FOr batch retrieval of Events based on a query
+    /// FOr batch retrieval of Events based on a query.
+    /// <remarks>
+    /// <list type="number">
+    ///     <item><description>This endpoint is <c>Public</c></description></item>
+    ///     <item><description>This endpoint is <c>Non-Idempotent</c></description></item>
+    /// </list>
+    /// </remarks>
     /// </summary>
     /// <returns></returns>
     [HttpGet]
@@ -20,19 +26,31 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     }
 
     /// <summary>
-    /// For retreival of a single Event object using its id 
+    /// For retreival of a single Event object using its name.
+    /// <remarks>
+    /// <list type="number">
+    ///     <item><description>This endpoint is <c>Public</c></description></item>
+    ///     <item><description>This endpoint is <c>Non-Idempotent</c></description></item>
+    /// </list>
+    /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{id}")]
+    [HttpGet("{name}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] int id, CancellationToken ct)
+    public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string name, CancellationToken ct)
     {
-        logger.LogInformation("Getting event {id}", id);
-        return Ok(await service.GetEventById(id, ct));
+        logger.LogInformation("Getting event {name}", name);
+        return Ok(await service.GetEventByName(name, ct));
     }
     
     /// <summary>
-    /// Creates an Event
+    /// Creates an Event.
+    /// <remarks>
+    /// <list type="number">
+    ///     <item><description>This endpoint is <c>Private</c></description></item>
+    ///     <item><description>This endpoint is <c>Idempotent</c></description></item>
+    /// </list>
+    /// </remarks>
     /// </summary>
     /// <returns>The Created Event</returns>
     [HttpPost]
@@ -41,12 +59,12 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     {
         logger.LogInformation("Creating event {eventDto}", eventDto);
         var created = await service.CreateEvent(eventDto, ct);
-        return CreatedAtAction(nameof(GetEvent), new {id = created.Id},  created);
+        return CreatedAtAction(nameof(GetEvent), new {name = created.Name},  created);
     }
 
     
     /// <summary>
-    /// Deletes an event 
+    /// Deletes an event. <remarks>This endpoint is <c>Private</c></remarks>
     /// </summary>
     /// <returns></returns>
     [HttpDelete]
@@ -60,7 +78,13 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     }
 
     /// <summary>
-    /// Updates an EVent based on its iD 
+    /// Updates an EVent based on its iD.
+    /// <remarks>
+    /// <list type="number">
+    ///     <item><description>This endpoint is <c>Private</c></description></item>
+    ///     <item><description>This endpoint is <c>Idempotent</c></description></item>
+    /// </list>
+    /// </remarks>
     /// </summary>
     /// <returns></returns>
     [HttpPut("{id}")]
