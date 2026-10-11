@@ -8,5 +8,5 @@ public interface IArtistService
     
     public Task<ArtistSummaryDto> Create(CreateArtistDto dto, CancellationToken ct);
     
-    public Task<ArtistSummaryDto> GetArtistByName(string name, CancellationToken ct);
+    public Task<ICollection<ArtistSummaryDto>> GetArtistByName(string name, CancellationToken ct);
 }

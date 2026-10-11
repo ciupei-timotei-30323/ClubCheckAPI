@@ -6,7 +6,7 @@ namespace ClubCheckAPI.Helpers;
 
 public static partial class SlugHelper
 {
-    public static string Slugify(string input, string entityName,int maxLength = 80)
+    public static string Slugify(string input, string entityName,int maxLength = 150)
     {
         var decomposed = input.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder();

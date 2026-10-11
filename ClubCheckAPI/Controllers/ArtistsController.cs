@@ -32,7 +32,7 @@ public class ArtistsController(IArtistService service, ILogger<ArtistsController
     /// <returns></returns>
     [HttpGet("private/{name}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ArtistSummaryDto>> GetByName([FromRoute] string name, CancellationToken ct)
+    public async Task<ActionResult<ICollection<ArtistSummaryDto>>> GetByName([FromRoute] string name, CancellationToken ct)
     {
         logger.LogInformation("Getting artist with name {name}", name);
         return Ok(await service.GetArtistByName(name, ct));
