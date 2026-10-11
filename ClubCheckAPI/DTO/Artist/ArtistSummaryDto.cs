@@ -4,8 +4,8 @@ namespace ClubCheckAPI.DTO.Artist;
 
 public record ArtistSummaryDto()
 {
-    // [Required]
-    // public required int Id { get; set; }
+    [Required]
+    public required int Id { get; set; }
     
     [Required]
     [MaxLength(150)]

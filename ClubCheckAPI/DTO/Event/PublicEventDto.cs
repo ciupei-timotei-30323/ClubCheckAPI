@@ -35,5 +35,5 @@ public record PublicEventDto()
     public ICollection<string> GenresName { get; set; } = [];
 
     // We nned the Slug and the Name of the Artists here
-    public ICollection<ArtistSummaryDto> ArtistsSummary { get; set; } = [];
+    public ICollection<PublicArtistDto> ArtistsSummary { get; set; } = [];
 }

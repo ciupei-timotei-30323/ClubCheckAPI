@@ -3,6 +3,7 @@ using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.DTO.Genre;
 using ClubCheckAPI.Exceptions;
+using ClubCheckAPI.Helpers;
 using ClubCheckAPI.IServices;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -46,10 +47,27 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
 
     public Task<ArtistSummaryDto> Create(CreateArtistDto dto, CancellationToken ct)
     {
-        
-        
+        // var baseSlug = SlugHelper.Slugify(dto)
+        throw new NotImplementedException();
     }
-    
+
+    public async Task<ArtistSummaryDto> GetArtistByName(string name, CancellationToken ct)
+    {
+        var artistDto = await context.Artists.Where(a => a.Name == name)
+            .Select(a => new ArtistSummaryDto()
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Slug = a.Slug,
+            }).FirstOrDefaultAsync(ct);
+        if (artistDto is null)
+        {
+            throw new NotFoundException(nameof(Artist), name);
+        }
+
+        return artistDto;
+    }
+
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
     {
         var taken = await context.Artists
@@ -64,5 +82,4 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         while (taken.Contains($"{baseSlug}-{n}")) n++;
         return $"{baseSlug}-{n}";
     }
-    
 }
