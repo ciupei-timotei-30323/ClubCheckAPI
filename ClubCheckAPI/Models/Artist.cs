@@ -8,6 +8,8 @@ public class Artist
     public int Id { get; set; }
 
     [MaxLength(150)] public required string Name { get; set; }
+    
+    [MaxLength(150)] public required string Slug { get; set; }
 
     // public ICollection<User>? FollowingUsers { get; set; }
 

@@ -7,7 +7,7 @@ namespace ClubCheckAPI.DTO.Artist;
 public record PublicArtistDetailedDto()
 {
     [Required]
-    public required int Id { get; set; }
+    public required string Slug { get; set; }
     
     [Required]
     [MaxLength(150)]

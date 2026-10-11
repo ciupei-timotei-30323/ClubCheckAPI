@@ -10,6 +10,7 @@ public class Event
     public int Id { get; set; }
 
     [MaxLength(100)] public required string Name { get; set; }
+    [MaxLength(150)] public required string Slug { get; set; }
     public required DateTime StartDate { get; set; }
     public required bool IsActive { get; set; }
     public DateTime? EndDate { get; set; }

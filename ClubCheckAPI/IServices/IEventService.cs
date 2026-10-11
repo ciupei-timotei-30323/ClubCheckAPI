@@ -6,7 +6,7 @@ public interface IEventService
 {
     public Task<ICollection<PublicEventDto>> GetEvents(QueryEventsDto queryDto, CancellationToken ct);
 
-    public Task<PublicEventDto> GetEventByName(string name, CancellationToken ct);
+    public Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct);
 
     public Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct);
 

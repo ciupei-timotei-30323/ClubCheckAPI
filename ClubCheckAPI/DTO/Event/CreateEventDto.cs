@@ -7,7 +7,7 @@ namespace ClubCheckAPI.DTO.Event;
 public record CreateEventDto()
 {
     [Required]
-    public string Name { get; set; }
+    public required string Name { get; set; }
     [Required]
     public DateTime StartDate { get; set; }
     [Required]

@@ -30,8 +30,7 @@ public class ClubCheckAPIContext : DbContext
             .ComplexProperty(v => v.Price);
         
         modelBuilder.Entity<Artist>()
-            .HasIndex(a => a.Name)
-            .IsUnique();
+            .HasIndex(a => a.Slug).IsUnique();
         
         modelBuilder.Entity<Venue>()
             .HasIndex(v => v.Name)
@@ -42,8 +41,7 @@ public class ClubCheckAPIContext : DbContext
             .IsUnique();
         
         modelBuilder.Entity<Event>()
-            .HasIndex(e => e.Name)
-            .IsUnique();
+            .HasIndex(e => e.Slug).IsUnique();
     }
     
     

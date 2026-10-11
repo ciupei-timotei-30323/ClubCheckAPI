@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ClubCheckAPI.DomainClasses;
+using ClubCheckAPI.DTO.Artist;
 
 
 namespace ClubCheckAPI.DTO.Event;
@@ -7,7 +8,7 @@ namespace ClubCheckAPI.DTO.Event;
 public record PublicEventDto()
 {
     [Required] 
-    public required int Id { get; set; }
+    public required string Slug { get; set; }
     
     [Required]
     [MaxLength(100)]
@@ -33,5 +34,6 @@ public record PublicEventDto()
 
     public ICollection<string> GenresName { get; set; } = [];
 
-    public ICollection<string> ArtistsName { get; set; } = [];
+    // We nned the Slug and the Name of the Artists here
+    public ICollection<ArtistSummaryDto> ArtistsSummary { get; set; } = [];
 }

@@ -17,7 +17,7 @@ public record PublicVenueDetailedDto()
     
     // public Uri? GoogleMapsUrl { get; set; }
 
-    public ICollection<EventSummaryDto> EventSummary { get; set; } = [];
+    public ICollection<PublicEventDto> Events { get; set; } = [];
 
     // public ICollection<ReviewSummaryDto>?  ReviewSummary { get; set; }
 
