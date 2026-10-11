@@ -1,3 +1,8 @@
+@genreName = "Rock"
+GET http://localhost:8080/genre/name?{{genreName}}
+Accept: application/json
+
+###
 ###
 GET http://localhost:8080/health
 Accept: application/json
