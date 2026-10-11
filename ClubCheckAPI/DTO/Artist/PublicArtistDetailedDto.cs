@@ -12,10 +12,10 @@ public record PublicArtistDetailedDto()
     [Required]
     [MaxLength(150)]
     public required string Name { get; set; }
-    
-    public ICollection<EventSummaryDto>? Events  { get; set; }
-    
-    public ICollection<GenreSummaryDto>? Genres { get; set; }
+
+    public ICollection<EventSummaryDto> Events { get; set; } = [];
+
+    public ICollection<GenreSummaryDto> Genres { get; set; } = [];
     
     public Uri? SpotifyProfileUrl { get; set; }
 

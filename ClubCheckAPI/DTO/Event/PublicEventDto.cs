@@ -30,8 +30,8 @@ public record PublicEventDto()
     
     [Required]
     public required string VenueName { get; set; }
-    
-    public ICollection<string>? GenresName { get; set; }
-    
-    public ICollection<string>? ArtistsName { get; set; }
+
+    public ICollection<string> GenresName { get; set; } = [];
+
+    public ICollection<string> ArtistsName { get; set; } = [];
 }

@@ -22,10 +22,10 @@ public record CreateEventDto()
     
     // Connection with other DTO's
     [Required]
-    public required int VenueId {get; set;} 
-    
-    public ICollection<int>? GenresId { get; set; }
-    
-    public ICollection<int>? ArtistsId { get; set; }
-    
+    public required int VenueId {get; set;}
+
+    public ICollection<int> GenresId { get; set; } = [];
+
+    public ICollection<int> ArtistsId { get; set; } = [];
+
 }

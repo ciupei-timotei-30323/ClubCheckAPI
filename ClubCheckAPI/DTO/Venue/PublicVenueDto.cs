@@ -11,8 +11,8 @@ public record PublicVenueDto()
     public required string Name { get; set; }
     
     public string? City { get; set; }
-    
-    public ICollection<int>? EventIds { get; set; }
-    
-    
+
+    public ICollection<int> EventIds { get; set; } = [];
+
+
 }
