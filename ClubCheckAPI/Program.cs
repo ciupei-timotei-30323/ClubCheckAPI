@@ -43,6 +43,7 @@ try
     builder.Services.AddOpenApi();
 
     builder.Services.AddScoped<IGenreService, GenreService>();
+    builder.Services.AddScoped<IArtistService, ArtistService>();
     
     var app = builder.Build();
 

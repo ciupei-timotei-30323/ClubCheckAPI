@@ -7,7 +7,7 @@ namespace ClubCheckAPI.DTO.Event;
 public record CreateEventDto()
 {
     [Required]
-    public string Name { get; set; }
+    public required string Name { get; set; }
     [Required]
     public DateTime StartDate { get; set; }
     [Required]
@@ -22,10 +22,10 @@ public record CreateEventDto()
     
     // Connection with other DTO's
     [Required]
-    public required int VenueId {get; set;} 
-    
-    public ICollection<int>? GenresId { get; set; }
-    
-    public ICollection<int>? ArtistsId { get; set; }
-    
+    public required int VenueId {get; set;}
+
+    public ICollection<int> GenresId { get; set; } = [];
+
+    public ICollection<int> ArtistsId { get; set; } = [];
+
 }

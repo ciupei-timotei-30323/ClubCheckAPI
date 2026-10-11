@@ -7,15 +7,15 @@ namespace ClubCheckAPI.DTO.Artist;
 public record PublicArtistDetailedDto()
 {
     [Required]
-    public required int Id { get; set; }
+    public required string Slug { get; set; }
     
     [Required]
     [MaxLength(150)]
     public required string Name { get; set; }
-    
-    public ICollection<EventSummaryDto>? Events  { get; set; }
-    
-    public ICollection<GenreSummaryDto>? Genres { get; set; }
+
+    public ICollection<EventSummaryDto> Events { get; set; } = [];
+
+    public ICollection<GenreSummaryDto> Genres { get; set; } = [];
     
     public Uri? SpotifyProfileUrl { get; set; }
 

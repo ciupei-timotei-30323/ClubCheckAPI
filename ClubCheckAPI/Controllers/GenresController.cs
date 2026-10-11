@@ -45,7 +45,7 @@ public class GenresController(IGenreService service, ILogger<GenresController> l
     {
         logger.LogInformation("Creating genre {dto}", dto);
         var created = await service.CreateGenre(dto, ct);
-        return CreatedAtAction(nameof(GetGenre), new {id = created.Id}, created);
+        return CreatedAtAction(nameof(GetGenre), new {name = created.Name}, created);
     }
     
     

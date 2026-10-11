@@ -35,12 +35,12 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{name}")]
+    [HttpGet("{slug}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string name, CancellationToken ct)
+    public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string slug, CancellationToken ct)
     {
-        logger.LogInformation("Getting event {name}", name);
-        return Ok(await service.GetEventByName(name, ct));
+        logger.LogInformation("Getting event {name}", slug);
+        return Ok(await service.GetEventBySlug(slug, ct));
     }
     
     /// <summary>
