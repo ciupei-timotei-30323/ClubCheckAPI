@@ -36,7 +36,7 @@ public class HealthController(ILogger<HealthController> _logger,
             return Ok("DB is connected!");
         }
 
-        _logger.LogError("DB [{dbInfo}] is offline ", _db.Database.GetConnectionString());
+        _logger.LogError("DB is offline ");
         throw new DbNotConnectedException(_db.ContextId.ToString());
     }
     

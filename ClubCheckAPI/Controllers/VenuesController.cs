@@ -32,7 +32,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueById([FromRoute] string name, CancellationToken ct)
     {
         logger.LogInformation("Getting venue {name}", name);
-        return Ok(service.GetVenueByName(name, ct));
+        return Ok(await service.GetVenueByName(name, ct));
     }
 
     

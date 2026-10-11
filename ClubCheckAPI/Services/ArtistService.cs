@@ -50,7 +50,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         var artist = new Artist
         {
             Name = dto.Name,
-            Slug = FindFreeSlug(baseSlug, ct).Result
+            Slug = await FindFreeSlug(baseSlug, ct)
         };
         
         context.Artists.Add(artist);

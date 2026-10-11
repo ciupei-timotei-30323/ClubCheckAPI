@@ -19,7 +19,16 @@ public class ClubCheckAPIContext : DbContext
     public ClubCheckAPIContext(DbContextOptions<ClubCheckAPIContext> options) : base(options)
     {
     }
-    
+
+
+  
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //     optionsBuilder
+    //         .UseSqlServer(
+    //             @"Server=(localdb)\mssqllocaldb;Database=EFQuerying;Trusted_Connection=True;ConnectRetryCount=0",
+    //             o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+    // }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
