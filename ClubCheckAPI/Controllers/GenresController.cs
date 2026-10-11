@@ -9,6 +9,7 @@ namespace ClubCheckAPI.Controllers;
 public class GenresController(IGenreService service, ILogger<GenresController> logger) : ControllerBase
 {
 
+    // GET 
     /// <summary>
     /// Gets a Genre based on its name.
     /// <remarks>

@@ -1,6 +1,9 @@
 using ClubCheckAPI.Exceptions;
+using ClubCheckAPI.IServices;
 using Microsoft.EntityFrameworkCore;
 using ClubCheckAPI.Models;
+using ClubCheckAPI.Services;
+using Scalar.AspNetCore;
 using Serilog;
 
 
@@ -39,6 +42,8 @@ try
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     builder.Services.AddOpenApi();
 
+    builder.Services.AddScoped<IGenreService, GenreService>();
+    
     var app = builder.Build();
 
 
@@ -47,6 +52,7 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.MapScalarApiReference();
     }
 
 

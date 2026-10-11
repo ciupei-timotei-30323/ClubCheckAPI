@@ -2,19 +2,21 @@ using System.Net;
 using System.Security.Principal;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace ClubCheckAPI.Exceptions;
 
 public sealed class GlobalExceptionHandler(
-    ILogger<GlobalExceptionHandler> _logger,
-    IProblemDetailsService _problemDetailsService) : IExceptionHandler
+    ILogger<GlobalExceptionHandler> logger,
+    IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
         CancellationToken cancellationToken)
     {
-        _logger.LogError(exception, "Unhandled exception occured. TraceID: {}", httpContext.TraceIdentifier);
-
         var (statusCode, title) = MapException(exception);
+
+        LogProblemDetails(statusCode, exception, httpContext, logger);
 
         httpContext.Response.StatusCode = statusCode;
 
@@ -29,7 +31,7 @@ public sealed class GlobalExceptionHandler(
         // problemDetails.Extensions["traceID"] = httpContext.TraceIdentifier;
         problemDetails.Extensions["TimeUTC"] = DateTime.UtcNow;
 
-        return await _problemDetailsService.TryWriteAsync(new ProblemDetailsContext()
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext()
         {
             HttpContext = httpContext,
             ProblemDetails = problemDetails
@@ -39,9 +41,10 @@ public sealed class GlobalExceptionHandler(
     private static (int statusCode, string title) MapException(Exception exception) => exception switch
     {
         AppException appException => ((int)appException.StatusCode, appException.PublicMessage),
-        NotImplementedException notImplementedException => ((int)HttpStatusCode.NotImplemented, notImplementedException.Message),
+        NotImplementedException notImplementedException => ((int)HttpStatusCode.NotImplemented, "Not Implemented Yet"),
         ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
         UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+        MethodAccessException  => (StatusCodes.Status405MethodNotAllowed, "Forbidden"),
         _ => (StatusCodes.Status500InternalServerError, "An internal error occured")
     };
 
@@ -60,5 +63,21 @@ public sealed class GlobalExceptionHandler(
         }
 
         return null;
+    }
+
+    private static void LogProblemDetails(int statusCode, Exception exception, HttpContext context,
+        ILogger<GlobalExceptionHandler> logger)
+    {
+        switch (statusCode)
+        {
+            case >= 400 and < 500:
+                logger.LogWarning(exception, "Client error {statusCode} for {Method} {Path}. TraceID: {TraceID}", statusCode,
+                    context.Request.Method, context.Request.Path, context.TraceIdentifier);
+                break;
+            case >= 500 and < 600:
+                logger.LogError(exception, "Server error {statusCode} for {Method} {Path}. TraceID: {TraceID}", statusCode,
+                    context.Request.Method, context.Request.Path, context.TraceIdentifier);
+                break;
+        }
     }
 }
