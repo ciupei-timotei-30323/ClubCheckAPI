@@ -16,15 +16,15 @@ public record ArtistSummaryDto()
     [MaxLength(150)]
     public required string Name { get; set; }
 
-    public ICollection<EventSummaryDto> Events { get; set; } = [];
-
-    public ICollection<GenreSummaryDto> Genres { get; set; } = [];
-    
-    public Uri? SpotifyProfileUrl { get; set; }
-
-    public Uri? SpotifyImageUrl { get; set; }
-
-    public Uri? SoundcloudProfileUrl { get; set; }
-
-    public Uri? InstagramProfileUrl { get; set; }
+    // public ICollection<EventSummaryDto> Events { get; set; } = [];
+    //
+    // public ICollection<GenreSummaryDto> Genres { get; set; } = [];
+    //
+    // public Uri? SpotifyProfileUrl { get; set; }
+    //
+    // public Uri? SpotifyImageUrl { get; set; }
+    //
+    // public Uri? SoundcloudProfileUrl { get; set; }
+    //
+    // public Uri? InstagramProfileUrl { get; set; }
 }

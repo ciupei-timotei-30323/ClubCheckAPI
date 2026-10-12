@@ -20,23 +20,14 @@ public class ArtistsController(IArtistService service, ILogger<ArtistsController
         return Ok(await service.GetArtistBySlug(slug, ct));
     }
 
-    /// <summary>
-    /// Returns the Artist Summary object. Usefull for when trying to see if the artist already exists in the DB or not
-    /// <remarks>
-    /// <list type="number">
-    ///     <item><description>This endpoint is <c>Private</c></description></item>
-    ///     <item><description>This endpoint is <c>Idempotent</c></description></item>
-    /// </list>
-    /// </remarks>
-    /// </summary>
-    /// <returns></returns>
-    [HttpGet("private/{name}")]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ICollection<ArtistSummaryDto>>> GetByName([FromRoute] string name, CancellationToken ct)
-    {
-        logger.LogInformation("Getting artist with name {name}", name);
-        return Ok(await service.GetArtistByName(name, ct));
-    }
+
+    // [HttpGet("private/{name}")]
+    // [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // public async Task<ActionResult<ICollection<ArtistSummaryDto>>> GetByName([FromRoute] string name, CancellationToken ct)
+    // {
+    //     logger.LogInformation("Getting artist with name {name}", name);
+    //     return Ok(await service.GetArtistByName(name, ct));
+    // }
     
     /// <summary>
     /// <remarks>
