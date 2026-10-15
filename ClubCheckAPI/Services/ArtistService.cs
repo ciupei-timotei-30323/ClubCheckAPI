@@ -44,7 +44,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         return artistDto;
     }
 
-     
+
     public async Task<ArtistSummaryDto> Create(CreateArtistDto dto, CancellationToken ct)
     {
         var existing =
@@ -59,11 +59,13 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             }
         }
 
+        bool doesSlugContainOnlyName = dto.Slug.EndsWith(dto.Name) || dto.Slug == "";
         var created = context.Artists.Add(new Artist()
         {
             Name = dto.Name,
-            // If Slug is empty, create one from the Name property, else keep the Slug
-            Slug = await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct)
+            Slug = doesSlugContainOnlyName
+                ? await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct)
+                : await FindFreeSlug(dto.Slug, ct)
         });
 
 
@@ -78,8 +80,8 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             throw new DbException(e.Message);
         }
     }
-    
-    
+
+
     /// <summary>
     /// Checks if localSlug is included in the externalSlug
     /// </summary>
@@ -89,9 +91,9 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
     private static bool AreSlugsTheSame(string localSlug, string externalSlug)
     {
         // Checks is one of the slugs is empty and returns false
-        if(string.IsNullOrEmpty(localSlug) || string.IsNullOrEmpty(externalSlug))
+        if (string.IsNullOrEmpty(localSlug) || string.IsNullOrEmpty(externalSlug))
             return false;
-        
+
         // Get the words decomposed int o a list
         List<string> localSlugDecomposed = new List<string>(localSlug.Split(EscapeChars()));
         List<string> externalSlugDecomposed = new List<string>(externalSlug.Split(EscapeChars()));
@@ -108,7 +110,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
                 return false;
             }
         }
-        
+
         return true;
     }
 

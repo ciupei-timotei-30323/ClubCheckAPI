@@ -7,9 +7,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Serilog;
 using Testcontainers.PostgreSql;
 using Xunit.Abstractions;
 
@@ -114,7 +111,7 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
         }
 
         [Fact]
-        public async Task Post_CreateArtistWithAlreadyPresentSlug_ReturnsCreated()
+        public async Task Post_CreateArtistWithDuplicateSlug_ReturnsCreated()
         {
             // Arrange
             await _httpClient.PostAsJsonAsync("/Artists",
@@ -131,5 +128,71 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             Assert.Equal("justice|france|frenchElectronicDuo-2",responseJson.Slug);
         }
+
+        [Fact]
+        public async Task Post_CreateArtistWithEmptySlugAndDuplicateName_ReturnsBadRequest()
+        {
+            // Arrange
+            await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Gaspard", Slug = "gaspard|france" });
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Gaspard", Slug = "" });
+
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
+
+            
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            
+        }
+        
+        
+        [Fact]
+        public async Task Post_CreateArtistWithDuplicateNameAndSlug_ReturnsCreatedWithSameSlug()
+        {
+            // Arrange
+            await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Manuel", Slug = "manuel|france" });
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Manuel", Slug = "manuel|france" });
+
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
+            var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+            _outputHelper.WriteLine(responseJson.ToString());
+            
+            // Assert
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            Assert.Equal("manuel|france", responseJson.Slug);
+            
+        }
+        
+        [Fact]
+        public async Task Post_CreateArtistWithDuplicateName_ReturnsCreated()
+        {
+            // Arrange
+            await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Tame Impala", Slug = "tameImpala|australia" });
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Tame Impala", Slug = "tameImpala|norway" });
+
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
+            var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+            _outputHelper.WriteLine(responseJson.ToString());
+            
+            // Assert
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            Assert.Equal("tameImpala|norway", responseJson.Slug);
+            
+        }
+        
     }
 }
