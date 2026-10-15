@@ -44,14 +44,19 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         return artistDto;
     }
 
-    // TODO Implement Integration Test for this 
+     
     public async Task<ArtistSummaryDto> Create(CreateArtistDto dto, CancellationToken ct)
     {
-        var existing = await context.Artists.FirstOrDefaultAsync(a => AreSlugsTheSame(a.Slug, dto.Slug) && a.Name == dto.Name, ct);
+        var existing =
+            await context.Artists.FirstOrDefaultAsync(a => a.Name == dto.Name, ct);
+
 
         if (existing is not null)
         {
-            return ToSummaryDto(existing);
+            if (AreSlugsTheSame(existing.Slug, dto.Slug))
+            {
+                return ToSummaryDto(existing);
+            }
         }
 
         var created = context.Artists.Add(new Artist()
@@ -60,7 +65,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             // If Slug is empty, create one from the Name property, else keep the Slug
             Slug = dto.Slug == "" ? await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct) : dto.Slug,
         });
-        
+
 
         try
         {
@@ -121,14 +126,45 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 
-    // TODO Two Slugs equal even if one of the slugs is completely included in the other slug
-    private static bool AreSlugsTheSame(string s1, string s2)
+    /// <summary>
+    /// Checks if localSlug is included in the externalSlug
+    /// </summary>
+    /// <param name="localSlug">Slug from the DB</param>
+    /// <param name="externalSlug">Slug from the DTO</param>
+    /// <returns>True if localSlug is included in the externalSlug</returns>
+    private static bool AreSlugsTheSame(string localSlug, string externalSlug)
     {
+        // Checks is one of the slugs is empty and returns false
+        if(string.IsNullOrEmpty(localSlug) || string.IsNullOrEmpty(externalSlug))
+            return false;
         
+        // Get the words decomposed int o a list
+        List<string> localSlugDecomposed = new List<string>(localSlug.Split(EscapeChars()));
+        List<string> externalSlugDecomposed = new List<string>(externalSlug.Split(EscapeChars()));
+
+        // Convert both lists to lower invariant
+        localSlugDecomposed = localSlugDecomposed.Select(l => l.ToLowerInvariant()).ToList();
+        externalSlugDecomposed = externalSlugDecomposed.Select(l => l.ToLowerInvariant()).ToList();
+
+        foreach (var dbProp in localSlugDecomposed)
+        {
+            // If the dbProp is not contained in the externalSlugDecomposed list, return false
+            if (!externalSlugDecomposed.Contains(dbProp))
+            {
+                return false;
+            }
+        }
         
-        throw new NotImplementedException();
+        return true;
     }
-    
+
+    /// <summary>
+    /// Holds chars that can be used to separate different words in a Slug
+    /// </summary>
+    /// <returns></returns>
+    private static ReadOnlySpan<char> EscapeChars() =>
+        new ReadOnlySpan<char>(['-', '.', '_', '|', ',', '+', ';', '&']);
+
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
     {
         var taken = await context.Artists
