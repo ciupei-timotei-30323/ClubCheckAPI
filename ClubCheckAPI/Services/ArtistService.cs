@@ -63,7 +63,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         {
             Name = dto.Name,
             // If Slug is empty, create one from the Name property, else keep the Slug
-            Slug = dto.Slug == "" ? await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct) : dto.Slug,
+            Slug = await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct)
         });
 
 
@@ -78,54 +78,8 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             throw new DbException(e.Message);
         }
     }
-
-    // public async Task<ICollection<ArtistSummaryDto>> GetArtistByName(
-    //     string name, CancellationToken ct)
-    // {
-    //     var trimmed = name.Trim();
-    //     if (trimmed.Length == 0)
-    //         return [];
-    //
-    //     var pattern = EscapeLike(trimmed);
-    //
-    //     var artists = await context.Artists
-    //         .Where(a => EF.Functions.ILike(a.Name, pattern))
-    //         .OrderBy(a => a.Name)
-    //         .ThenBy(a => a.Slug)
-    //         .Take(50)
-    //         .Select(a => new ArtistSummaryDto
-    //         {
-    //             Id = a.Id,
-    //             Name = a.Name,
-    //             Slug = a.Slug,
-    //             InstagramProfileUrl = a.InstagramProfileUrl,
-    //             SoundcloudProfileUrl = a.SoundcloudProfileUrl,
-    //             SpotifyProfileUrl = a.SpotifyProfileUrl,
-    //             SpotifyImageUrl = a.SpotifyImageUrl,
-    //             Events = a.Events.Select(e => new EventSummaryDto
-    //             {
-    //                 Name = e.Name,
-    //                 Slug = e.Slug,
-    //                 StartDate = e.StartDate
-    //             }).ToList(),
-    //             Genres = a.Genres.Select(g => new GenreSummaryDto
-    //             {
-    //                 Id = g.Id,
-    //                 Name = g.Name
-    //             }).ToList()
-    //         })
-    //         .ToListAsync(ct);
-    //
-    //     if (!artists.Any())
-    //     {
-    //         throw new NotFoundException(nameof(Artist), name);
-    //     }
-    //     return artists;
-    // }
-
-    private static string EscapeLike(string value) =>
-        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
-
+    
+    
     /// <summary>
     /// Checks if localSlug is included in the externalSlug
     /// </summary>
@@ -168,7 +122,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
     {
         var taken = await context.Artists
-            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "-"))
+            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "|"))
             .Select(a => a.Slug)
             .ToListAsync(ct);
 

@@ -17,7 +17,7 @@ public static partial class SlugHelper
         }
 
         var slug = NonAlphanumeric()
-            .Replace(sb.ToString().ToLowerInvariant(), "-")
+            .Replace(sb.ToString().ToLowerInvariant(), "|")
             .Trim('-');
 
         if (slug.Length > maxLength)

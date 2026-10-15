@@ -1,7 +1,7 @@
 using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
+using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
 using Testcontainers.PostgreSql;
+using Xunit.Abstractions;
 
 namespace TestProject1;
 
@@ -33,10 +34,13 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
     {
         private readonly WebApplicationFactory<Program> _webApplicationFactory;
 
+        private readonly ITestOutputHelper _outputHelper;
+
         private readonly HttpClient _httpClient;
 
-        public ArtistCreationTests(PostgreSQLTests fixture)
+        public ArtistCreationTests(PostgreSQLTests fixture, ITestOutputHelper outputHelper)
         {
+            _outputHelper = outputHelper;
             var clientOptions = new WebApplicationFactoryClientOptions();
 
             clientOptions.AllowAutoRedirect = false;
@@ -79,16 +83,53 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
         /// ARTIST CREATION TESTS
         /// </summary>
         [Fact]
-        public async Task Post_CreateArtist_ReturnsRedirectToRoot()
+        public async Task Post_CreateArtist_ReturnsCreated()
         {
             // Arrange
-
+            var name= "THAKK";
+            var slug = "thakk|clujNapoca";
 
             // Act
-            var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = "THAKK", Slug = "thakk|clujNapoca" });
-
+            var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = name, Slug = slug });
+            
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
             // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Post_CreateArtistWithoutGivenSlug_ReturnsBadRequest()
+        {
+            // Arrange
+            var name = "Daft Punk";
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = name });
+            
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Post_CreateArtistWithAlreadyPresentSlug_ReturnsCreated()
+        {
+            // Arrange
+            await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Justice", Slug = "justice|france|frenchElectronicDuo" });
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "Justice Tribute Band", Slug = "justice|france|frenchElectronicDuo" });
+
+            var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+            _outputHelper.WriteLine(responseJson.ToString());
+            
+            // Asser
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            Assert.Equal("justice|france|frenchElectronicDuo-2",responseJson.Slug);
         }
     }
 }
