@@ -6,7 +6,7 @@ namespace ClubCheckAPI.Helpers;
 
 public static partial class SlugHelper
 {
-    public static string Slugify(string input, string entityName,int maxLength = 150)
+    public static string Slugify(string input, string entityName = "Artist",int maxLength = 150)
     {
         var decomposed = input.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder();
@@ -17,7 +17,7 @@ public static partial class SlugHelper
         }
 
         var slug = NonAlphanumeric()
-            .Replace(sb.ToString().ToLowerInvariant(), "-")
+            .Replace(sb.ToString().ToLowerInvariant(), "|")
             .Trim('-');
 
         if (slug.Length > maxLength)
