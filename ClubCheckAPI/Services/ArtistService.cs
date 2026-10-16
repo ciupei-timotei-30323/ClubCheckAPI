@@ -55,6 +55,7 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         {
             if (AreSlugsTheSame(existing.Slug, dto.Slug))
             {
+                existing.Slug = dto.Slug;
                 return ToSummaryDto(existing);
             }
         }
@@ -102,10 +103,10 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         localSlugDecomposed = localSlugDecomposed.Select(l => l.ToLowerInvariant()).ToList();
         externalSlugDecomposed = externalSlugDecomposed.Select(l => l.ToLowerInvariant()).ToList();
 
-        foreach (var dbProp in localSlugDecomposed)
+        foreach (var dbProp in externalSlugDecomposed)
         {
             // If the dbProp is not contained in the externalSlugDecomposed list, return false
-            if (!externalSlugDecomposed.Contains(dbProp))
+            if (!localSlugDecomposed.Contains(dbProp))
             {
                 return false;
             }

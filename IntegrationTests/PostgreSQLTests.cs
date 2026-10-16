@@ -35,6 +35,7 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
 
         private readonly HttpClient _httpClient;
 
+        //TODO Move this class to another file
         public ArtistCreationTests(PostgreSQLTests fixture, ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
@@ -191,6 +192,31 @@ public sealed class PostgreSQLTests() : IAsyncLifetime
             // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             Assert.Equal("tameImpala|norway", responseJson.Slug);
+            
+        }
+
+
+        //TODO Make this not fail
+        [Fact]
+        public async Task Post_CreateArtistWithPartialPresentSlug_ReturnsCreated()
+        {
+            // Arrange
+            await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "T2S", Slug = "t2s|romania" });
+            
+            // Act
+            var response = await _httpClient.PostAsJsonAsync("/Artists",
+                new { Name = "T2S", Slug = "t2s|romania|dj" });
+
+            _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+            
+            var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+            _outputHelper.WriteLine(responseJson.ToString()); 
+            
+            // Assert
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            Assert.Equal("t2s|romania|dj", responseJson.Slug);
+            
             
         }
         
