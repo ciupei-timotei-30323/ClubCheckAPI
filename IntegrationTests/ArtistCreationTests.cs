@@ -1,15 +1,9 @@
-using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using ClubCheckAPI.DTO.Artist;
-using ClubCheckAPI.Models;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
-namespace IntegrationTests;
+namespace TestProject1;
 
 public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFactory>
 {
