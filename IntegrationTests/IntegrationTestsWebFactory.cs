@@ -1,6 +1,8 @@
+using System.Data.Common;
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
@@ -13,18 +15,20 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        _postgreSqlContainer.GetConnectionString();
+        var connString = _postgreSqlContainer.GetConnectionString();
+        builder.ConfigureServices(services =>
+        {
+            services.Remove(services.SingleOrDefault(service => typeof(DbContextOptions<ClubCheckAPIContext>) == service.ServiceType));
+            services.AddDbContext<ClubCheckAPIContext>((_, option) => option.UseNpgsql(connString));
+        });
     }
 
-    // 3. IAsyncLifetime starts the container (and you can even run Database.Migrate() right after!)
+
     public async Task InitializeAsync()
     {
         await _postgreSqlContainer.StartAsync();
-        // this.Services.GetService<ClubCheckAPIContext>().Database.Migrate();
-        var db = (ClubCheckAPIContext)this.Services.CreateScope().ServiceProvider
-            .GetService(typeof(ClubCheckAPIContext));
-        db?.Database.Migrate();
-        
+        using var scope = Services.CreateScope();
+        await  scope.ServiceProvider.GetRequiredService<ClubCheckAPIContext>().Database.MigrateAsync();
     }
 
     public new Task DisposeAsync()
