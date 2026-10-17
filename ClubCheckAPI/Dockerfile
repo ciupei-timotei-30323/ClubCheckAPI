@@ -28,10 +28,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS base
 
 WORKDIR /backend
-COPY "ClubCheckAPI/ClubCheckAPI.csproj" .
+COPY *.csproj .
 RUN dotnet restore
-COPY "ClubCheckAPI" .
-RUN dotnet publish -c release -o /app
+COPY . .
+RUN dotnet publish -c release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
