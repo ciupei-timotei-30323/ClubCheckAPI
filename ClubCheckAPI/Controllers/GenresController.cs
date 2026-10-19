@@ -1,5 +1,6 @@
 using ClubCheckAPI.DTO.Genre;
 using ClubCheckAPI.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;
@@ -20,7 +21,7 @@ public class GenresController(IGenreService service, ILogger<GenresController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{name}")]
+    [HttpGet("public/{name}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GenreSummaryDto>> GetGenre([FromRoute] string name, CancellationToken ct)
     {
@@ -40,7 +41,8 @@ public class GenresController(IGenreService service, ILogger<GenresController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpPost]
+    [Authorize]
+    [HttpPost("private")]
     public async Task<ActionResult<GenreSummaryDto>> CreateGenre([FromBody] CreateGenreDto dto, CancellationToken ct)
     {
         logger.LogInformation("Creating genre {dto}", dto);

@@ -1,5 +1,5 @@
 @genreName = "Rock"
-GET http://localhost:8080/genre/name?{{genreName}}
+GET http://localhost:30021/genres/name?{{genreName}}
 Accept: application/json
 
 ###
