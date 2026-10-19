@@ -1,5 +1,6 @@
 using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;
@@ -12,7 +13,7 @@ public class ArtistsController(IArtistService service, ILogger<ArtistsController
     /// fetches detailed information about an artist based on its name. <remarks>This endpoint is <c>Public</c></remarks> 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{slug}")]
+    [HttpGet("public/{slug}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicArtistDetailedDto>> GetBySlug([FromRoute] string slug, CancellationToken ct)
     {
@@ -38,7 +39,8 @@ public class ArtistsController(IArtistService service, ILogger<ArtistsController
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpPost]
+    [Authorize]
+    [HttpPost("private")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<ArtistSummaryDto>> CreateArtist([FromBody] CreateArtistDto dto, CancellationToken ct)
     {

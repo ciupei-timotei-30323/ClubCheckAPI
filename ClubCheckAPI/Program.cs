@@ -1,3 +1,4 @@
+using ClubCheckAPI.ApiAuth;
 using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.IServices;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,14 @@ try
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services));
 
-
+    // Adding API key authorization
+    builder.Services
+        .AddAuthentication(ApiKeyAuthenticationOptions.DefaultScheme)
+        .AddScheme<ApiKeyAuthenticationOptions, ApiAuthHandler>(
+            ApiKeyAuthenticationOptions.DefaultScheme, _ => { });
+    builder.Services.AddAuthorization();
+    
+    
 // Adding ProblemDetails and GlobalExceptionHandler
     builder.Services.AddProblemDetails();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -56,9 +64,15 @@ try
 
     builder.Services.AddScoped<IGenreService, GenreService>();
     builder.Services.AddScoped<IArtistService, ArtistService>();
+    
 
     var app = builder.Build();
 
+    // app.MapGet("/public/", () => "anyone can read this");
+    //
+    // app.MapGet("/private/", () => "only callers with a valid API key see this")
+    //     .RequireAuthorization();
+    
 
     app.UseExceptionHandler();
     app.UseSerilogRequestLogging();

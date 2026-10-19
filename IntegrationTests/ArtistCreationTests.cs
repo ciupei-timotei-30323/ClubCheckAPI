@@ -13,6 +13,10 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
 
     private readonly HttpClient _httpClient;
 
+    private static string baseRequiredUri = "/Artists/private";
+    
+    private readonly HttpClient _httpClientNotAuth;
+    
     //TODO Move this class to another file
     public ArtistCreationTests(IntegrationTestWebAppFactory factory, ITestOutputHelper outputHelper)
     {
@@ -24,6 +28,7 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
         // _webApplicationFactory = new CustomWebApplicationFactory(fixture);
 
         _httpClient = factory.CreateClient();
+        _httpClientNotAuth = factory.CreateUnauthenticatedClient();
     }
 
     // private sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
@@ -53,6 +58,24 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
     /// <summary>
     /// ARTIST CREATION TESTS
     /// </summary>
+
+    [Fact]
+    public async Task Post_CreateArtistNotAuth_ReturnsNotFound()
+    {
+        // Arrange
+        var name = "Michael Jackson";
+        var slug = "michaelJackson|usa";
+        
+        // Act
+        var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = name, Slug = slug });
+
+        _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        
+    }
+    
     [Fact]
     public async Task Post_CreateArtist_ReturnsCreated()
     {
@@ -61,7 +84,7 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
         var slug = "thakk|clujNapoca";
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = name, Slug = slug });
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name, Slug = slug });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -76,7 +99,7 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
         var name = "Daft Punk";
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists", new { Name = name });
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -88,11 +111,11 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
     public async Task Post_CreateArtistWithDuplicateSlug_ReturnsCreated()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync("/Artists",
+        await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Justice", Slug = "justice|france|frenchElectronicDuo" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists",
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Justice Tribute Band", Slug = "justice|france|frenchElectronicDuo" });
 
         var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
@@ -107,11 +130,11 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
     public async Task Post_CreateArtistWithEmptySlugAndDuplicateName_ReturnsBadRequest()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync("/Artists",
+        await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Gaspard", Slug = "gaspard|france" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists",
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Gaspard", Slug = "" });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
@@ -128,11 +151,11 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
     public async Task Post_CreateArtistWithDuplicateNameAndSlug_ReturnsCreatedWithSameSlug()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync("/Artists",
+        await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Manuel", Slug = "manuel|france" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists",
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Manuel", Slug = "manuel|france" });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
@@ -154,7 +177,7 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
             new { Name = "Tame Impala", Slug = "tameImpala|australia" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists",
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "Tame Impala", Slug = "tameImpala|norway" });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
@@ -174,11 +197,11 @@ public sealed class ArtistCreationTests : IClassFixture<IntegrationTestWebAppFac
     public async Task Post_CreateArtistWithPartialPresentSlug_ReturnsCreated()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync("/Artists",
+        await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "T2S", Slug = "t2s|romania" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync("/Artists",
+        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
             new { Name = "T2S", Slug = "t2s|romania|dj" });
 
         _outputHelper.WriteLine(await response.Content.ReadAsStringAsync());

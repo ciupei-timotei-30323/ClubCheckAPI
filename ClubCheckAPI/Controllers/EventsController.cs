@@ -1,6 +1,8 @@
 using ClubCheckAPI.DTO.Event;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
+using Microsoft.AspNetCore.Authorization;
+
 namespace ClubCheckAPI.Controllers;
 
 [ApiController]
@@ -17,7 +19,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet]
+    [HttpGet("public")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ICollection<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
     {
@@ -35,7 +37,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{slug}")]
+    [HttpGet("public/{slug}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string slug, CancellationToken ct)
     {
@@ -53,7 +55,8 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </remarks>
     /// </summary>
     /// <returns>The Created Event</returns>
-    [HttpPost]
+    [Authorize]
+    [HttpPost("private")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<PublicEventDto>> CreateEvent([FromBody] CreateEventDto eventDto, CancellationToken ct)
     {
@@ -67,7 +70,8 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// Deletes an event. <remarks>This endpoint is <c>Private</c></remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpDelete]
+    [Authorize]
+    [HttpDelete("private")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteEvent([FromBody] DeleteEventsQuery query, CancellationToken ct)
@@ -87,7 +91,8 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpPut("{id}")]
+    [Authorize]
+    [HttpPut("private/{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicEventDto>> UpdateEvent([FromBody] UpdateEventDto eventDto, [FromRoute] int id, CancellationToken ct)
     {

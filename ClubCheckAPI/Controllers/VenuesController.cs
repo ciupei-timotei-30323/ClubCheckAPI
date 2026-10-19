@@ -1,5 +1,6 @@
 using ClubCheckAPI.DTO.Venue;
 using ClubCheckAPI.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;
@@ -27,7 +28,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpGet("{name}")]
+    [HttpGet("public/{name}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueById([FromRoute] string name, CancellationToken ct)
     {
@@ -46,7 +47,8 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpPost]
+    [Authorize]
+    [HttpPost("private")]
     public async Task<ActionResult<PublicVenueDto>> CreateVenue([FromBody] CreateVenueDto venueDto,
         CancellationToken ct)
     {
@@ -66,7 +68,8 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpPut("{id}")]
+    [Authorize]
+    [HttpPut("private/{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicVenueDto>> UpdateVenue([FromRoute] int id, [FromBody] UpdateVenueDto venueDto,
         CancellationToken ct)
@@ -86,7 +89,8 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// </remarks>
     /// </summary>
     /// <returns></returns>
-    [HttpDelete("{id}")]
+    [Authorize]
+    [HttpDelete("private/{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteVenue([FromRoute] int id, CancellationToken ct)
     {

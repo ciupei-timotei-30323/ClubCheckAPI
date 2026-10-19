@@ -43,7 +43,7 @@ public sealed class GlobalExceptionHandler(
         AppException appException => ((int)appException.StatusCode, appException.PublicMessage),
         NotImplementedException notImplementedException => ((int)HttpStatusCode.NotImplemented, "Not Implemented Yet"),
         ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"),
-        UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+        UnauthorizedAccessException => (StatusCodes.Status404NotFound, "Not Found"),
         MethodAccessException  => (StatusCodes.Status405MethodNotAllowed, "Forbidden"),
         _ => (StatusCodes.Status500InternalServerError, "An internal error occured")
     };

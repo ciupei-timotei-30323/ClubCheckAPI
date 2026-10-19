@@ -1,7 +1,9 @@
+using ClubCheckAPI.ApiAuth;
 using ClubCheckAPI.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 
@@ -21,6 +23,24 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         });
     }
 
+    
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+
+        var config = Services.GetRequiredService<IConfiguration>();
+        var devApiKey = config["ApiKey:Value"];
+
+        if (!string.IsNullOrEmpty(devApiKey))
+        {
+            client.DefaultRequestHeaders.Add(ApiKeyAuthenticationOptions.HeaderName, devApiKey);
+        }
+    }
+    
+    public HttpClient CreateUnauthenticatedClient()
+    {
+        return CreateDefaultClient(); // Creates a raw client without ConfigureClient's headers
+    }
 
     public async Task InitializeAsync()
     {

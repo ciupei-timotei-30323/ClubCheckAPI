@@ -4,7 +4,10 @@
     build:
       context: .
       dockerfile: ClubCheckAPI/Dockerfile
+#    command:
+#      - dotnet ef
     environment:
+      - ApiKey__Value=${API_KEY}
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ConnectionStrings__DefaultConnection=${DB_CONN_STRING_CONTAINER}
     depends_on:
@@ -28,7 +31,3 @@
     ports:
       - "5432:5432"
 
-  testingDb:
-    image: postgres
-    ports:
-      - "5432:5432"
