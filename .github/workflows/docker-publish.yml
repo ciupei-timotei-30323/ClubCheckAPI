@@ -134,6 +134,6 @@ jobs:
       - name: Deploy new image to Container App
         run: |
           az containerapp update \
-            --name <your-container-app-name> \
+            --name clubcheck-api \
             --resource-group ClubCheck \
             --image ${{ needs.build.outputs.image }}
