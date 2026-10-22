@@ -30,7 +30,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// <returns></returns>
     [HttpGet("public/{name}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueById([FromRoute] string name, CancellationToken ct)
+    public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueByName([FromRoute] string name, CancellationToken ct)
     {
         logger.LogInformation("Getting venue {name}", name);
         return Ok(await service.GetVenueByName(name, ct));
@@ -54,7 +54,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     {
         logger.LogInformation("Creating venue {venue}", venueDto);
         var created = await service.CreateVenue(venueDto, ct);
-        return CreatedAtAction(nameof(GetVenueById), new { name = created.Name }, created);
+        return CreatedAtAction(nameof(GetVenueByName), new { name = created.Name }, created);
     }
 
     

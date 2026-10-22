@@ -18,13 +18,14 @@ public class Event
 
     [MaxLength(800)] public string? Description { get; set; }
 
+    // [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Artist> Artists { get; set; } = [];
 
     // public ICollection<User>? FollowingUsers { get; set; }
-
+    // [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Genre> Genres { get; set; } = [];
 
-
+    // [DeleteBehavior(DeleteBehavior.Cascade)]
     public required int VenueId { get; set; }
     public required Venue Venue { get; set; }
 

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClubCheckAPI.Controllers;
-//TODO Change route for private endpoints to something like /private/..
 [ApiController]
 [Route("[controller]")]
 public class ArtistsController(IArtistService service, ILogger<ArtistsController> logger) : ControllerBase

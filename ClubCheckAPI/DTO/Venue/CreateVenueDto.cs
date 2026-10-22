@@ -10,5 +10,5 @@ public record CreateVenueDto()
     public required string Name { get; set; }
     
     public Address? Address { get; set; }
-    public ICollection<int> EventIds { get; set; } = [];
+    // public ICollection<int> EventIds { get; set; } = [];
 }

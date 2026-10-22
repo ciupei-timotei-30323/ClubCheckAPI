@@ -20,7 +20,7 @@ try
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services));
+        .ReadFrom.Services(services),true); // True otherwise Logger freezes in Testing (idk why)
 
     // Adding API key authorization
     builder.Services
@@ -64,6 +64,7 @@ try
 
     builder.Services.AddScoped<IGenreService, GenreService>();
     builder.Services.AddScoped<IArtistService, ArtistService>();
+    builder.Services.AddScoped<IVenueService, VenueService>();
     
 
     var app = builder.Build();

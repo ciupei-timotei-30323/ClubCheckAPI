@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClubCheckAPI.Models;
 
@@ -11,8 +12,10 @@ public class Genre
     
     // public ICollection<User> FollowingUsers { get; set; }
 
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Artist> Artists { get; set; } = [];
 
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Event> Events { get; set; } = [];
 
 }
