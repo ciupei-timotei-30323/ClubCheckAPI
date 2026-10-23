@@ -11,7 +11,7 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
 {
     private readonly HttpClient _httpClient = factory.CreateAuthenticatedClient();
 
-    private static string baseRequiredUri = "/Venues/private";
+    private static string _baseRequiredUri = "/Venues/private";
 
     private readonly HttpClient _httpClientNotAuth = factory.CreateUnauthenticatedClient();
 
@@ -28,7 +28,7 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         outputHelper.WriteLine(_httpClientNotAuth.DefaultRequestHeaders.ToString());
 
         // Act
-        var response = await _httpClientNotAuth.PostAsJsonAsync(baseRequiredUri, new { Name = name });
+        var response = await _httpClientNotAuth.PostAsJsonAsync(_baseRequiredUri, new { Name = name });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -45,14 +45,14 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         // var address = new Address("40000","200", "Str. Piezisa","Cluj-Napoca");
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = name, Address = new Address("40000", "200", "Str. Piezisa", "Cluj-Napoca") });
         var responseJson = await response.Content.ReadFromJsonAsync<PublicVenueDto>();
-        outputHelper.WriteLine(responseJson.ToString());
+        outputHelper.WriteLine(responseJson?.ToString());
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("Cluj-Napoca", responseJson.City);
+        Assert.Equal("Cluj-Napoca", responseJson?.City);
     }
 
     [Fact]
@@ -63,11 +63,11 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
         var name2 = "Form";
         // var address = new Address("40000","200", "Str. Piezisa","Cluj-Napoca");
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = name2, Address = new Address("40000", "200", "Str. Piezisa", "Cluj-Napoca") });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name });
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name });
         var responseJson = await response.Content.ReadFromJsonAsync<PublicVenueDto>();
         outputHelper.WriteLine(responseJson?.ToString());
 
@@ -84,11 +84,11 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         // Arrange
         var name = "Form (Cluj-Napoca)";
         var name2 = "Form";
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = name2, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
         var responseJson = await response.Content.ReadFromJsonAsync<PublicVenueDto>();
         outputHelper.WriteLine(responseJson?.ToString());
 
@@ -105,11 +105,11 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         // Arrange
         var name = "Form";
         var name2 = "Form";
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = name2, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name, Address = new Address(null, "200", "Str. Piezisa", "Cluj-Napoca") });
         var responseJson = await response.Content.ReadFromJsonAsync<PublicVenueDto>();
         outputHelper.WriteLine(responseJson?.ToString());
 
@@ -119,5 +119,26 @@ public class VenueCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         Assert.Equal("Cluj-Napoca", responseJson?.City);
         Assert.Equal(1, responseJson?.Id);
     }
+    
+    [Fact]
+    public async Task Post_CreateVenueWithDifferentNameAndAddressWithDuplicateZipCode_ReturnsCreated()
+    {
+        // Arrange
+        var name = "?";
+        var name2 = "The Matter";
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
+            new { Name = name2, Address = new Address("40347", "3", "Str. Universitatii", "Cluj-Napoca") });
+
+        // Act
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name, Address = new Address("40347","-", "-", "-") });
+        var responseJson = await response.Content.ReadFromJsonAsync<PublicVenueDto>();
+        outputHelper.WriteLine(responseJson?.ToString());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("The Matter", responseJson?.Name);
+        Assert.Equal("Cluj-Napoca", responseJson?.City);
+    }
+    
     
 }

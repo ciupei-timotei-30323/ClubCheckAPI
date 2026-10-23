@@ -12,7 +12,7 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
 
     private readonly HttpClient _httpClient = factory.CreateAuthenticatedClient();
 
-    private static string baseRequiredUri = "/Artists/private";
+    private static string _baseRequiredUri = "/Artists/private";
     
     private readonly HttpClient _httpClientNotAuth = factory.CreateUnauthenticatedClient();
 
@@ -56,7 +56,7 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
         var slug = "michaelJackson|usa";
         
         // Act
-        var response = await _httpClientNotAuth.PostAsJsonAsync(baseRequiredUri, new { Name = name, Slug = slug });
+        var response = await _httpClientNotAuth.PostAsJsonAsync(_baseRequiredUri, new { Name = name, Slug = slug });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -73,7 +73,7 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
         var slug = "thakk|clujNapoca";
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name, Slug = slug });
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name, Slug = slug });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -88,7 +88,7 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
         var name = "Daft Punk";
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri, new { Name = name });
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri, new { Name = name });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
@@ -100,30 +100,30 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
     public async Task Post_CreateArtistWithDuplicateSlug_ReturnsCreated()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Justice", Slug = "justice|france|frenchElectronicDuo" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Justice Tribute Band", Slug = "justice|france|frenchElectronicDuo" });
 
         var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
-        outputHelper.WriteLine(responseJson.ToString());
+        outputHelper.WriteLine(responseJson?.ToString());
 
         // Asser
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("justice|france|frenchElectronicDuo-2", responseJson.Slug);
+        Assert.Equal("justice|france|frenchElectronicDuo-2", responseJson?.Slug);
     }
 
     [Fact]
     public async Task Post_CreateArtistWithEmptySlugAndDuplicateName_ReturnsBadRequest()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Gaspard", Slug = "gaspard|france" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Gaspard", Slug = "" });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
@@ -140,21 +140,21 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
     public async Task Post_CreateArtistWithDuplicateNameAndSlug_ReturnsCreatedWithSameSlug()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Manuel", Slug = "manuel|france" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Manuel", Slug = "manuel|france" });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
         var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
-        outputHelper.WriteLine(responseJson.ToString());
+        outputHelper.WriteLine(responseJson?.ToString());
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("manuel|france", responseJson.Slug);
+        Assert.Equal("manuel|france", responseJson?.Slug);
 
     }
 
@@ -166,17 +166,17 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
             new { Name = "Tame Impala", Slug = "tameImpala|australia" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "Tame Impala", Slug = "tameImpala|norway" });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
         var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
-        outputHelper.WriteLine(responseJson.ToString());
+        outputHelper.WriteLine(responseJson?.ToString());
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("tameImpala|norway", responseJson.Slug);
+        Assert.Equal("tameImpala|norway", responseJson?.Slug);
 
     }
 
@@ -186,21 +186,21 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
     public async Task Post_CreateArtistWithPartialPresentSlug_ReturnsCreated()
     {
         // Arrange
-        await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "T2S", Slug = "t2s|romania" });
 
         // Act
-        var response = await _httpClient.PostAsJsonAsync(baseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(_baseRequiredUri,
             new { Name = "T2S", Slug = "t2s|romania|dj" });
 
         outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
 
         var responseJson = await response.Content.ReadFromJsonAsync<ArtistSummaryDto>();
-        outputHelper.WriteLine(responseJson.ToString());
+        outputHelper.WriteLine(responseJson?.ToString());
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("t2s|romania|dj", responseJson.Slug);
+        Assert.Equal("t2s|romania|dj", responseJson?.Slug);
 
 
     }
