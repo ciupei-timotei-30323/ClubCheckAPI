@@ -12,7 +12,7 @@ public record PublicVenueDto()
     
     public string? City { get; set; }
 
-    public ICollection<int> EventIds { get; set; } = [];
+    // public ICollection<int> EventIds { get; set; } = [];
 
 
 }

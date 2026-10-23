@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClubCheckAPI.Models;
 
@@ -13,8 +14,10 @@ public class Artist
 
     // public ICollection<User>? FollowingUsers { get; set; }
 
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Event> Events { get; set; } = [];
 
+    [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Genre> Genres { get; set; } = [];
 
     public Uri? SpotifyProfileUrl { get; set; }

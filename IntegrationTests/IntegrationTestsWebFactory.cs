@@ -28,6 +28,18 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
     {
         base.ConfigureClient(client);
 
+        // var config = Services.GetRequiredService<IConfiguration>();
+        // var devApiKey = config["ApiKey:Value"];
+        //
+        // if (!string.IsNullOrEmpty(devApiKey))
+        // {
+        //     client.DefaultRequestHeaders.Add(ApiKeyAuthenticationOptions.HeaderName, devApiKey);
+        // }
+    }
+
+    public HttpClient CreateAuthenticatedClient()
+    {
+        var client = CreateDefaultClient();
         var config = Services.GetRequiredService<IConfiguration>();
         var devApiKey = config["ApiKey:Value"];
 
@@ -35,6 +47,8 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         {
             client.DefaultRequestHeaders.Add(ApiKeyAuthenticationOptions.HeaderName, devApiKey);
         }
+
+        return client;
     }
     
     public HttpClient CreateUnauthenticatedClient()
