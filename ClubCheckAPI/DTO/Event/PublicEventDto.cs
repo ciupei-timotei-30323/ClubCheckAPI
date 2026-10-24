@@ -36,4 +36,10 @@ public record PublicEventDto()
 
     // We nned the Slug and the Name of the Artists here
     public ICollection<PublicArtistDto> ArtistsSummary { get; set; } = [];
+
+    public override string ToString()
+    {
+        return
+            $"{nameof(Slug)}: {Slug}, {nameof(Name)}: {Name}, {nameof(StartDate)}: {StartDate}, {nameof(Description)}: {Description}, {nameof(AnnouncementUrl)}: {AnnouncementUrl}, {nameof(TicketUrl)}: {TicketUrl}, {nameof(Price)}: {Price}, {nameof(EndDate)}: {EndDate}, {nameof(VenueName)}: {VenueName}, {nameof(GenresName)}: {GenresName}, {nameof(ArtistsSummary)}: {ArtistsSummary}";
+    }
 }

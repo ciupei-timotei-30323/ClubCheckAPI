@@ -49,7 +49,7 @@ public sealed class ArtistCreationTests(IntegrationTestWebAppFactory factory, IT
     /// </summary>
 
     [Fact]
-    public async Task Post_CreateArtistNotAuth_ReturnsNotFound()
+    public async Task Post_CreateArtistNotAuth_ReturnsForbidden()
     {
         // Arrange
         var name = "Michael Jackson";
