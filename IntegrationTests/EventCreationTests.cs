@@ -17,8 +17,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
     private readonly HttpClient _httpClientNotAuth = factory.CreateUnauthenticatedClient();
 
-
-    private async Task<Dictionary<string, List<int>>> Seed_VenueGenresArtists_ReturnsIDs()
+    public async Task<Dictionary<string, List<int>>> Seed_VenueGenresArtists_ReturnsIDs()
     {
         // Artist
         List<int> artistsId = [];
@@ -27,6 +26,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
             var responseArtists = await _httpClient.PostAsJsonAsync("/Artists/private",
                 new { Name = $"Artist-{i}", Slug = $"artist{i}|tests" });
             var artistSummaryDto = await responseArtists.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+            outputHelper.WriteLine(artistSummaryDto?.ToString());
             if (artistSummaryDto != null)
                 artistsId.Add(artistSummaryDto.Id);
         }
@@ -38,6 +38,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
             var responseGenres = await _httpClient.PostAsJsonAsync("/Genres/private",
                 new { Name = $"Genre-{i}" });
             var genreSummaryDto = await responseGenres.Content.ReadFromJsonAsync<GenreSummaryDto>();
+            outputHelper.WriteLine(genreSummaryDto?.ToString());
             if (genreSummaryDto != null)
                 genresId.Add(genreSummaryDto.Id);
         }
@@ -46,6 +47,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         int venueId = 0;
         var responseVenue = await _httpClient.PostAsJsonAsync("/Venues/private", new { Name = "Venue-0" });
         var publicVenueDto = await responseVenue.Content.ReadFromJsonAsync<PublicVenueDto>();
+        outputHelper.WriteLine(publicVenueDto?.ToString());
         if (publicVenueDto != null)
         {
             venueId = publicVenueDto.Id;
@@ -55,7 +57,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         {
             { "Artists", artistsId },
             { "Genres", genresId },
-            { "Venue", new List<int>() { venueId } }
+            { "Venue", [venueId] }
         };
     }
 
@@ -64,7 +66,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
     {
         // Arrange
         var name = "Form University Party";
-        DateTime startDate = new DateTime(2027, 3, 24);
+        DateTime startDate = new DateTime(2027, 3, 24, 0, 0, 0, DateTimeKind.Utc);
         int venueId = 1;
 
 
@@ -83,17 +85,18 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
     {
         // Arrange
         var name = "Form University Party";
-        DateTime startDate = new DateTime(2027, 3, 24);
+        DateTime startDate = new DateTime(2027, 3, 24, 0, 0, 0, DateTimeKind.Utc);
         var seededIds = await Seed_VenueGenresArtists_ReturnsIDs();
 
         // Act
-        var response = await _httpClientNotAuth.PostAsJsonAsync(BaseRequiredUri,
+        var response = await _httpClient.PostAsJsonAsync(BaseRequiredUri,
             new
             {
                 Name = name, StartDate = startDate, VenueId = seededIds["Venue"][0], GenresId = seededIds["Genres"],
                 ArtistsId = seededIds["Artists"]
             });
-
+        outputHelper.WriteLine(response.ToString());
+        
         var responseJson = await response.Content.ReadFromJsonAsync<PublicEventDto>();
         outputHelper.WriteLine(responseJson?.ToString());
         

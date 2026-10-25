@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.Exceptions;
+using ClubCheckAPI.Helpers;
 using ClubCheckAPI.IServices;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -58,8 +59,6 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         if (!string.IsNullOrWhiteSpace(q.Artist))
             query = query.Where(e => e.Artists.Any(a => EF.Functions.ILike(a.Name, $"%{q.Artist}%")));
 
-        var total = await query.CountAsync(ct);
-
         var items = await query
             .OrderBy(e => e.StartDate)
             .ThenBy(e => e.Id)
@@ -71,16 +70,99 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         return items;
     }
 
-    public Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct)
+    public async Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var existingEvent = await context.Events.Where(e => e.Slug == slug).Select(ToPublicDto)
+            .FirstOrDefaultAsync(cancellationToken: ct);
+
+        if (existingEvent == null)
+            throw new NotFoundException(nameof(Event), slug);
+
+        return existingEvent;
     }
 
-    public Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct)
+    public async Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        // Does the venue mentioned in the event exist?
+        var venue = await context.Venues.FirstOrDefaultAsync(v => v.Id == eventDto.VenueId, ct);
+
+        if (venue is null)
+        {
+            logger.LogWarning("Venue [{VenueId}] doesn't exist when creating {EventDto}", eventDto.VenueId, eventDto);
+            throw new ArgumentException(nameof(Venue), $"{eventDto.VenueId} does not exist");
+        }
+
+        // Do the genres mentioned in the event exist?
+        var requestedGenreIds = eventDto.GenresId.Distinct().ToList();
+        var genres = await context.Genre.Where(g => requestedGenreIds.Contains(g.Id)).ToListAsync(ct);
+
+        if (genres.Count != requestedGenreIds.Count)
+        {
+            var missing = requestedGenreIds.Except(genres.Select(g => g.Id));
+            logger.LogWarning("Genres [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
+            throw new ArgumentException($"Genres not found: {string.Join(", ", missing)}", nameof(eventDto));
+        }
+
+        // Do the artists mentioned in the event exist
+
+        var requestedArtistIds = eventDto.ArtistsId.Distinct().ToList();
+        var artists = await context.Artists.Where(a => requestedArtistIds.Contains(a.Id)).ToListAsync(ct);
+        if (artists.Count != requestedArtistIds.Count)
+        {
+            var missing = requestedArtistIds.Except(artists.Select(a => a.Id));
+            logger.LogWarning("Artists [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
+            throw new ArgumentException($"Artists not found: {string.Join(", ", missing)}", nameof(eventDto));
+        }
+        
+        var created = await context.Events.AddAsync(new Event()
+        {
+            Name = eventDto.Name,
+            Slug = await FindFreeSlug(SlugHelper.Slugify(eventDto.Name, nameof(Event)), ct),
+            StartDate = eventDto.StartDate,
+            IsActive = eventDto.IsActive,
+            EndDate = eventDto.EndDate,
+            Description = eventDto.Description,
+            Price = eventDto.Price,
+            TicketUrl = eventDto.TicketUrl,
+            AnnouncementUrl = eventDto.AnnouncementUrl,
+            VenueId = eventDto.VenueId,
+            Venue = venue,
+            Genres = genres,
+            Artists = artists
+        }, ct);
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch(DbUpdateException e)
+        {
+            logger.LogError(e, "An error occured while trying to create a new event {Name}", eventDto.Name);
+            throw new DbException(e.InnerException.ToString());
+        }
+
+        return await context.Events
+            .Where(e => e.Id == created.Entity.Id)
+            .Select(ToPublicDto)
+            .SingleAsync(ct);
     }
 
+    private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
+    {
+        var taken = await context.Events
+            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "|"))
+            .Select(a => a.Slug)
+            .ToListAsync(ct);
+
+        if (!taken.Contains(baseSlug))
+            return baseSlug;
+
+        var n = 2;
+        while (taken.Contains($"{baseSlug}-{n}")) n++;
+        return $"{baseSlug}-{n}";
+    }
+    
+    
     public Task DeleteEvents(DeleteEventsQuery query, CancellationToken ct)
     {
         throw new NotImplementedException();

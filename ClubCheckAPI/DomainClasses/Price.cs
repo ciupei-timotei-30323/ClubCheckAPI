@@ -7,8 +7,8 @@ namespace ClubCheckAPI.DomainClasses;
 // [ComplexType]
 public  class Price : IComparable<Price>, IEquatable<Price>
 {
-    [Precision(8, 2)] private decimal Value { get; set; }
-    private Currency? Currency { get; set; }
+    [Precision(8, 2)] public decimal Value { get; set; }
+    public Currency? Currency { get; set; }
 
     /// <summary>
     /// 
@@ -20,6 +20,8 @@ public  class Price : IComparable<Price>, IEquatable<Price>
         Value = value;
         Currency = currency;
     }
+    
+    public Price(){}
 
     // Operators Overriding
 

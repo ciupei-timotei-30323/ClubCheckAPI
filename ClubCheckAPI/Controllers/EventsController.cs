@@ -62,7 +62,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     {
         logger.LogInformation("Creating event {eventDto}", eventDto);
         var created = await service.CreateEvent(eventDto, ct);
-        return CreatedAtAction(nameof(GetEvent), new {name = created.Name},  created);
+        return CreatedAtAction(nameof(GetEvent), new {slug = created.Slug},  created);
     }
 
     
