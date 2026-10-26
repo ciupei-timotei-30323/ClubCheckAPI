@@ -83,37 +83,16 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
     public async Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct)
     {
+        CheckDateValidity(eventDto);
         // Does the venue mentioned in the event exist?
-        var venue = await context.Venues.FirstOrDefaultAsync(v => v.Id == eventDto.VenueId, ct);
-
-        if (venue is null)
-        {
-            logger.LogWarning("Venue [{VenueId}] doesn't exist when creating {EventDto}", eventDto.VenueId, eventDto);
-            throw new ArgumentException(nameof(Venue), $"{eventDto.VenueId} does not exist");
-        }
+        var venue = await ValidateVenueExistence(logger, context, eventDto, ct);
 
         // Do the genres mentioned in the event exist?
-        var requestedGenreIds = eventDto.GenresId.Distinct().ToList();
-        var genres = await context.Genre.Where(g => requestedGenreIds.Contains(g.Id)).ToListAsync(ct);
-
-        if (genres.Count != requestedGenreIds.Count)
-        {
-            var missing = requestedGenreIds.Except(genres.Select(g => g.Id));
-            logger.LogWarning("Genres [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
-            throw new ArgumentException($"Genres not found: {string.Join(", ", missing)}", nameof(eventDto));
-        }
+        var genres = await ValidateGenresExistence(logger, context, eventDto, ct);
 
         // Do the artists mentioned in the event exist
+        var artists = await ValidateArtistsExistence(context, eventDto, ct, logger);
 
-        var requestedArtistIds = eventDto.ArtistsId.Distinct().ToList();
-        var artists = await context.Artists.Where(a => requestedArtistIds.Contains(a.Id)).ToListAsync(ct);
-        if (artists.Count != requestedArtistIds.Count)
-        {
-            var missing = requestedArtistIds.Except(artists.Select(a => a.Id));
-            logger.LogWarning("Artists [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
-            throw new ArgumentException($"Artists not found: {string.Join(", ", missing)}", nameof(eventDto));
-        }
-        
         var created = await context.Events.AddAsync(new Event()
         {
             Name = eventDto.Name,
@@ -145,6 +124,61 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             .Where(e => e.Id == created.Entity.Id)
             .Select(ToPublicDto)
             .SingleAsync(ct);
+    }
+
+    private void CheckDateValidity(CreateEventDto eventDto)
+    {
+        if (eventDto.StartDate.CompareTo(DateTime.UtcNow) > 0)
+        {
+            
+        }
+    }
+
+    private static async Task<Venue?> ValidateVenueExistence(ILogger<EventService> logger, ClubCheckAPIContext context, CreateEventDto eventDto,
+        CancellationToken ct)
+    {
+        var venue = await context.Venues.FirstOrDefaultAsync(v => v.Id == eventDto.VenueId, ct);
+
+        if (venue is null)
+        {
+            logger.LogWarning("Venue [{VenueId}] doesn't exist when creating {EventDto}", eventDto.VenueId, eventDto);
+            throw new ArgumentException(nameof(Venue), $"{eventDto.VenueId} does not exist");
+        }
+
+        return venue;
+    }
+
+    // Helper private methods
+    
+    private static async Task<List<Genre>> ValidateGenresExistence(ILogger<EventService> logger, ClubCheckAPIContext context, CreateEventDto eventDto,
+        CancellationToken ct)
+    {
+        var requestedGenreIds = eventDto.GenresId.Distinct().ToList();
+        var genres = await context.Genre.Where(g => requestedGenreIds.Contains(g.Id)).ToListAsync(ct);
+
+        if (genres.Count != requestedGenreIds.Count)
+        {
+            var missing = requestedGenreIds.Except(genres.Select(g => g.Id));
+            logger.LogWarning("Genres [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
+            throw new ArgumentException($"Genres not found: {string.Join(", ", missing)}", nameof(eventDto));
+        }
+
+        return genres;
+    }
+
+    private static async Task<List<Artist>> ValidateArtistsExistence(ClubCheckAPIContext context, CreateEventDto eventDto,
+        CancellationToken ct, ILogger<EventService> logger)
+    {
+        var requestedArtistIds = eventDto.ArtistsId.Distinct().ToList();
+        var artists = await context.Artists.Where(a => requestedArtistIds.Contains(a.Id)).ToListAsync(ct);
+        if (artists.Count != requestedArtistIds.Count)
+        {
+            var missing = requestedArtistIds.Except(artists.Select(a => a.Id));
+            logger.LogWarning("Artists [{Missing}] doesn't exist when creating {EventDto}", missing, eventDto);
+            throw new ArgumentException($"Artists not found: {string.Join(", ", missing)}", nameof(eventDto));
+        }
+
+        return artists;
     }
 
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)

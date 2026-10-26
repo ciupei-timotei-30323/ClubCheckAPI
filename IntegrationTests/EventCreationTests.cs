@@ -85,7 +85,7 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
     {
         // Arrange
         var name = "Form University Party";
-        DateTime startDate = new DateTime(2027, 3, 24, 0, 0, 0, DateTimeKind.Utc);
+        DateTime startDate = new DateTime(2027, 4, 24);
         var seededIds = await Seed_VenueGenresArtists_ReturnsIDs();
 
         // Act
@@ -109,6 +109,8 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         Assert.Equal("Venue-0", responseJson?.VenueName);
         
     }
+    
+    //TODO Add more tests for edge cases
 
 
 

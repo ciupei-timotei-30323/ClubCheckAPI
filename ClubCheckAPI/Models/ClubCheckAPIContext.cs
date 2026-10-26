@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ClubCheckAPI.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Core;
@@ -20,8 +21,13 @@ public class ClubCheckAPIContext : DbContext
     {
     }
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcConverter>();
+    }
 
-  
+
     // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     // {
     //     optionsBuilder
