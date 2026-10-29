@@ -65,6 +65,7 @@ try
     builder.Services.AddScoped<IGenreService, GenreService>();
     builder.Services.AddScoped<IArtistService, ArtistService>();
     builder.Services.AddScoped<IVenueService, VenueService>();
+    builder.Services.AddScoped<IEventService, EventService>();
     
 
     var app = builder.Build();

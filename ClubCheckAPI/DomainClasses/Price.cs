@@ -1,10 +1,11 @@
+using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClubCheckAPI.DomainClasses;
 
 // [ComplexType]
-public class Price
+public  class Price : IComparable<Price>, IEquatable<Price>
 {
     [Precision(8, 2)] public decimal Value { get; set; }
     public Currency? Currency { get; set; }
@@ -18,5 +19,80 @@ public class Price
     {
         Value = value;
         Currency = currency;
+    }
+    
+    public Price(){}
+
+    // Operators Overriding
+
+    private static void AreCurrencyTheSame(Price first, Price other)
+    {
+        if (first.Currency != other.Currency)
+        {
+            throw new PricesHaveDifferentCurrencyComparationException(first.Currency.ToString(),
+                other.Currency.ToString());
+        }
+    }
+
+    private sealed class ValueCurrencyEqualityComparer : IEqualityComparer<Price>
+    {
+        public bool Equals(Price? x, Price? y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (x is null) return false;
+            if (y is null) return false;
+            if (x.GetType() != y.GetType()) return false;
+            return x.Value == y.Value && x.Currency == y.Currency;
+        }
+
+        public int GetHashCode(Price obj)
+        {
+            return HashCode.Combine(obj.Value, obj.Currency);
+        }
+    }
+
+    public bool Equals(Price? other)
+    {
+        if (other == null) return false;
+        AreCurrencyTheSame(this, other);
+        return this.Value.Equals(other.Value);
+
+    }
+
+    public int CompareTo(Price? other)
+    {
+        if (other == null) return 1;
+
+        AreCurrencyTheSame(this, other);
+
+        return Value.CompareTo(other.Value);
+    }
+
+    public static bool operator >(Price a, Price b)
+    {
+        AreCurrencyTheSame(a, b);
+
+        return a.Value > b.Value;
+    }
+
+    public static bool operator <(Price a, Price b)
+    {
+        AreCurrencyTheSame(a, b);
+
+        return a.Value < b.Value;
+    }
+
+    public static bool operator <=(Price? a, Price? b)
+    {
+        AreCurrencyTheSame(a, b);
+
+        return a.Value <= b.Value;
+    }
+
+    public static bool operator >=(Price a, Price b)
+    {
+        AreCurrencyTheSame(a, b);
+
+        return a.Value >= b.Value;
     }
 }
