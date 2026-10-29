@@ -11,6 +11,8 @@ namespace ClubCheckAPI.Services;
 
 public class EventService(ILogger<EventService> logger, ClubCheckAPIContext context) : IEventService
 {
+    private static int _minimumEventDurationMinutes = 30;
+
     private static readonly Expression<Func<Event, PublicEventDto>> ToPublicDto = e => new PublicEventDto
     {
         Slug = e.Slug,
@@ -83,7 +85,9 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
     public async Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct)
     {
+        // Checks for the Dates to be valid (No past event can be added)
         CheckDateValidity(eventDto);
+
         // Does the venue mentioned in the event exist?
         var venue = await ValidateVenueExistence(logger, context, eventDto, ct);
 
@@ -93,6 +97,14 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         // Do the artists mentioned in the event exist
         var artists = await ValidateArtistsExistence(context, eventDto, ct, logger);
 
+        // Is this a duplicate event?
+        var existingEvent = await IsEventDuplicate(context, eventDto, ct);
+
+        if (existingEvent != null)
+        {
+            return existingEvent;
+        }
+        
         var created = await context.Events.AddAsync(new Event()
         {
             Name = eventDto.Name,
@@ -114,10 +126,10 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         {
             await context.SaveChangesAsync(ct);
         }
-        catch(DbUpdateException e)
+        catch (DbUpdateException e)
         {
             logger.LogError(e, "An error occured while trying to create a new event {Name}", eventDto.Name);
-            throw new DbException(e.InnerException.ToString());
+            throw new DbException(e.InnerException?.ToString() ?? "");
         }
 
         return await context.Events
@@ -128,13 +140,37 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
     private void CheckDateValidity(CreateEventDto eventDto)
     {
-        if (eventDto.StartDate.CompareTo(DateTime.UtcNow) > 0)
+        if ((eventDto.StartDate - DateTime.UtcNow).TotalMinutes < 0)
         {
-            
+            logger.LogError("An error occured while trying to create a new event {Name}\nDate {Date} is in the past",
+                eventDto.Name, eventDto.StartDate);
+            throw new ArgumentException(nameof(DateTime), $"{eventDto.StartDate} is in the past.");
+        }
+
+        if (eventDto.EndDate != null)
+        {
+            // Checks for the End Date to be after the start date
+            if ((eventDto.EndDate.Value - eventDto.StartDate).TotalMinutes <= 0)
+            {
+                logger.LogError(
+                    "An error occured while trying to create a new event {Name}\nStart date {Date} is before the end date {EndDate}",
+                    eventDto.Name, eventDto.StartDate, eventDto.EndDate);
+                throw new ArgumentException(nameof(DateTime), $"{eventDto.EndDate} is invalid.");
+            }
+
+            if ((eventDto.EndDate.Value - eventDto.StartDate).TotalMinutes <= _minimumEventDurationMinutes)
+            {
+                logger.LogError(
+                    "An error occured while trying to create a new event {Name}\nTime interval of event is too small [{Date}, {EndDate}]\n Minimum is {Interval} minutes",
+                    eventDto.Name, eventDto.StartDate, eventDto.EndDate, _minimumEventDurationMinutes);
+                throw new ArgumentException(nameof(DateTime),
+                    $"{eventDto.EndDate} is too close to start date {eventDto.StartDate}. Minimum is {_minimumEventDurationMinutes} minutes");
+            }
         }
     }
 
-    private static async Task<Venue?> ValidateVenueExistence(ILogger<EventService> logger, ClubCheckAPIContext context, CreateEventDto eventDto,
+    private static async Task<Venue?> ValidateVenueExistence(ILogger<EventService> logger, ClubCheckAPIContext context,
+        CreateEventDto eventDto,
         CancellationToken ct)
     {
         var venue = await context.Venues.FirstOrDefaultAsync(v => v.Id == eventDto.VenueId, ct);
@@ -149,8 +185,9 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
     }
 
     // Helper private methods
-    
-    private static async Task<List<Genre>> ValidateGenresExistence(ILogger<EventService> logger, ClubCheckAPIContext context, CreateEventDto eventDto,
+
+    private static async Task<List<Genre>> ValidateGenresExistence(ILogger<EventService> logger,
+        ClubCheckAPIContext context, CreateEventDto eventDto,
         CancellationToken ct)
     {
         var requestedGenreIds = eventDto.GenresId.Distinct().ToList();
@@ -166,7 +203,8 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         return genres;
     }
 
-    private static async Task<List<Artist>> ValidateArtistsExistence(ClubCheckAPIContext context, CreateEventDto eventDto,
+    private static async Task<List<Artist>> ValidateArtistsExistence(ClubCheckAPIContext context,
+        CreateEventDto eventDto,
         CancellationToken ct, ILogger<EventService> logger)
     {
         var requestedArtistIds = eventDto.ArtistsId.Distinct().ToList();
@@ -179,6 +217,17 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         }
 
         return artists;
+    }
+
+    private async Task<PublicEventDto?> IsEventDuplicate(ClubCheckAPIContext dbContext, CreateEventDto eventDto,
+        CancellationToken ct)
+    {
+        var existingEvent = await dbContext.Events.Where(e =>
+            e.VenueId == eventDto.VenueId && e.StartDate.Date == eventDto.StartDate.Date &&
+            e.StartDate.TimeOfDay.Hours == eventDto.StartDate.TimeOfDay.Hours &&
+            e.StartDate.TimeOfDay.Minutes == eventDto.StartDate.TimeOfDay.Minutes).Select(ToPublicDto).FirstOrDefaultAsync(ct);
+
+        return existingEvent;
     }
 
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
@@ -195,8 +244,8 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         while (taken.Contains($"{baseSlug}-{n}")) n++;
         return $"{baseSlug}-{n}";
     }
-    
-    
+
+
     public Task DeleteEvents(DeleteEventsQuery query, CancellationToken ct)
     {
         throw new NotImplementedException();
