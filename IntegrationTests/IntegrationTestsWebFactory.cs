@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 namespace TestProject1;
@@ -15,11 +16,19 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        var connString = _postgreSqlContainer.GetConnectionString();
+        // var connString = _postgreSqlContainer.GetConnectionString();
+        var baseConnString = _postgreSqlContainer.GetConnectionString();
+    
+        // Safely injects the parameter into the connection string
+        var connBuilder = new NpgsqlConnectionStringBuilder(baseConnString)
+        {
+            IncludeErrorDetail = true
+        };
+        
         builder.ConfigureServices(services =>
         {
             services.Remove(services.SingleOrDefault(service => typeof(DbContextOptions<ClubCheckAPIContext>) == service.ServiceType));
-            services.AddDbContext<ClubCheckAPIContext>((_, option) => option.UseNpgsql(connString));
+            services.AddDbContext<ClubCheckAPIContext>((_, option) => option.UseNpgsql(connBuilder.ConnectionString));
         });
     }
 

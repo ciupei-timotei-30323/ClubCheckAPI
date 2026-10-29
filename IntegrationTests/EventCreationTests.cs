@@ -112,7 +112,6 @@ public class EventCreationTests(IntegrationTestWebAppFactory factory, ITestOutpu
         
     }
     
-    //TODO Add more tests for edge cases
 
     [Fact]
     public async Task Post_CreateEventWitInvalidVenue_ReturnsBadRequest()

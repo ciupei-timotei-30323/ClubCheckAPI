@@ -53,7 +53,12 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             query = query.Where(e => EF.Functions.ILike(e.Venue.Name, $"%{q.VenueName}%"));
 
         if (q.Price is { } maxPrice)
-            query = query.Where(e => e.Price <= maxPrice);
+        {
+            query = query.Where(e => 
+                e.Price != null &&
+                e.Price.Currency == maxPrice.Currency && 
+                e.Price.Value <= maxPrice.Value);
+        }
 
         if (q.GenresNames is { Count: > 0 })
             query = query.Where(e => e.Genres.Any(g => q.GenresNames.Contains(g.Name)));
@@ -233,7 +238,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
     {
         var taken = await context.Events
-            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "|"))
+            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "-"))
             .Select(a => a.Slug)
             .ToListAsync(ct);
 
