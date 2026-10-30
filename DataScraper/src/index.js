@@ -12,9 +12,3 @@ app.listen(port, hostname,
     () => {
         fastify.log.info("listening on http://" + hostname + ":" + port)
     })
-
-app.get('/health', (req, res) => {
-    res.send('OK'),
-        fastify.log.info("health check")
-})
-        
