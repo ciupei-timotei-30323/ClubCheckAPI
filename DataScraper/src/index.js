@@ -12,3 +12,9 @@ app.listen(port, hostname,
     () => {
         fastify.log.info("listening on http://" + hostname + ":" + port)
     })
+
+app.get('/', (req, res) => {
+    res.send('Hello Worlds!'),
+        fastify.log.info('Endpoint hit'),
+        res.status(200)
+})
