@@ -15,6 +15,14 @@
     ports:
       - "30021:8080"
     
+  scraper:
+    image: scraper:latest
+    build:
+      context: ./DataScraper
+      dockerfile: Dockerfile
+    ports:
+      - "30022:3000"
+  
     
   db:
     image: postgres

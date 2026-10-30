@@ -1,4 +1,4 @@
-name: Docker
+name: APITestAndPublish
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -12,8 +12,15 @@ on:
     branches: [ "main" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
+    paths:
+      - 'ClubCheckAPI/**'
+      - 'IntegrationTests/**'
+      - '.github/workflows/docker-publish.yml'
   pull_request:
-    branches: [ "main" ]
+    paths:
+      -  'ClubCheckAPI/**'
+      - 'IntegrationTests/**'
+      - '.github/workflows/docker-publish.yml'
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -92,8 +99,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha, scope=api
+          cache-to: type=gha,mode=max, scope=api
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker

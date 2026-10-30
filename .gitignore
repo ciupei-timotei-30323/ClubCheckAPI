@@ -73,4 +73,4 @@ nunit-*.xml
 /dataSources.local.xml
 /.idea
 /.aiassistant/
-
+/DataScraper/node_modules
