@@ -1,4 +1,12 @@
 ### GET request to example server
-GET http://127.0.0.1:3000/hello
+GET http://127.0.0.1:3060/
+
+###
+GET http://127.0.0.1:3060/scrape
+###
+
+# curl -H "x-api-key: sk_dev_kjecgadsgJHKJs9ZA9LaHMRy54enKJVaF" http://localhost:3060/scrape
+GET http://localhost:3060/scrape
+x-api-key: sk_dev_7kjecgadsgJHKJs9ZA9LaHMRy54enKJVaF
 
 ###

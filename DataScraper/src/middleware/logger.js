@@ -1,10 +1,6 @@
-export function getLoggerConfig (process) {
-    if(process == null){
-        console.log("No Enviroment Variables found")
-        return null
-    }
+export function getLoggerConfig (NODE_ENV) {
     return {
-        level: process.env.LOG_LEVEL || 'info',
+        level: 'info',
         transport: {
             target: 'pino-pretty',
             options: {
@@ -14,7 +10,7 @@ export function getLoggerConfig (process) {
             }
         },
         base: {
-            env: process.env.NODE_ENV || 'development',
+            env: NODE_ENV || 'development',
             app: 'scraper'
 
 

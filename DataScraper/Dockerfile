@@ -28,7 +28,7 @@ RUN chown -R node:node /app
 # Drop root privileges immediately
 USER node
 
-EXPOSE 3000
+EXPOSE $NODE_PORT
 
 # Run the app wrapped in dumb-init to prevent zombie processes
 CMD ["dumb-init", "node", "src/index.js"]

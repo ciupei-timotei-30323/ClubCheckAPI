@@ -1,22 +1,25 @@
-import Fastify from 'fastify'
 import {getLoggerConfig} from './middleware/logger.js'
 import {buildApp} from "./app.js";
-import {EnviromentVariablesNotFoundException} from "./exceptions/enviromentVariablesNotFoundException.js";
 
-try {
-    process.loadEnvFile()
-    
-}
-catch (e) {
-    Fastify().log.fatal(e, 'Environment Variables could not be found')
-    throw new EnviromentVariablesNotFoundException()
-}
+// This  block of code doesn't matter for containers
+//----------------------------------------------------------------------------------------------------
+try {                                                                                              // |
+    process.loadEnvFile('../.env')                                                           // |
+}                                                                                                  // |
+catch (e) {                                                                                        // |
+    console.log('[Environment Variables could not be found in the environment file provided]\n')   // |
+    console.log({e})                                                                               // |
+}                                                                                                  // | 
+// ----------------------------------------------------------------------------------------------------
 
 
-const loggerConfig = getLoggerConfig(process)
 // const fastify = Fastify({logger: loggerConfig})
+const enviroment = process.env.NODE_ENV || 'production'
+const loggerConfig = getLoggerConfig({enviroment})
 const hostname = process.env.NODE_HOST|| '0.0.0.0';
-const port = 3000;
+const port =  process.env.NODE_PORT || 3000;
+const serverKey = process.env.NODE_API_KEY || ''
+
 
 
 // fastify.route({
@@ -42,9 +45,8 @@ const port = 3000;
 //     }
 // })
 
+// Build the app
+const app = await buildApp({logger: loggerConfig, apiKey: serverKey})
+
 // Run the server!
-const app = await buildApp({logger: loggerConfig})
-
-
-
-app.listen({port: 3000, host: hostname}, () => app.log.info("live on http://" + hostname + ":" + port))
+app.listen({port: port, host: hostname}, () => app.log.info("live on http://" + hostname + ":" + port))

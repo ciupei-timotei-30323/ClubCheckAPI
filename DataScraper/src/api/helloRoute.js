@@ -1,6 +1,6 @@
 
 export function helloRoute(app){
-    app.get('/hello',  () => {
+    app.get('/',  () => {
         return {hello : "worlds"}
     })
 }
