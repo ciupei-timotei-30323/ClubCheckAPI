@@ -1,6 +1,6 @@
 import {scrapeService} from "../services/scrapeService.js";
 
-export async function scrapeRoute(app, {apiKey} ) {
+export async function scrapeRoute(app, {apiKey, pool}) {
     app.route({
     method: 'GET',
     url: '/scrape',
@@ -20,8 +20,8 @@ export async function scrapeRoute(app, {apiKey} ) {
     },
     handler: async function(req, res) {
         res.log.info('Scraper endpoint called successfully')
-        const result = await scrapeService()
-        await res.status(result.status).send(result.msg)
+        const result = await scrapeService(pool)
+        return await res.status(result.status).send(result.msg)
     }
 })
     
