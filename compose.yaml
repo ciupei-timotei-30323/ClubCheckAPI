@@ -22,7 +22,9 @@
       dockerfile: Dockerfile
     ports:
       - "30022:3000"
-  
+    environment:
+      NODE_ENV: $NODE_ENV
+      HOST: $NODE_HOST
     
   db:
     image: postgres

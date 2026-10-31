@@ -9,6 +9,7 @@ const port = 3000;
 fastify.get('/hello', function (request, reply) {
     reply.code(200)
         .send({msg: 'hello worlds'})
+
 })
 
 // Run the server!
