@@ -1,20 +1,22 @@
 import Fastify from 'fastify'
-import { loggerConfig } from './middleware/logger.js'
-import express from 'express'
+import {loggerConfig} from './middleware/logger.js'
 
 
-const fastify = Fastify({ logger: loggerConfig })
-const app = express()
-const hostname = '0.0.0.0';
+const fastify = Fastify({logger: loggerConfig})
+const hostname = '127.0.0.1';
 const port = 3000;
 
-app.listen(port, hostname,
-    () => {
-        fastify.log.info("listening on http://" + hostname + ":" + port)
-    })
+fastify.get('/hello', function (request, reply) {
+    reply.code(200)
+        .send({msg: 'hello worlds'})
 
-app.get('/', (req, res) => {
-    res.send('Hello Worlds!'),
-        fastify.log.info('Endpoint hit'),
-        res.status(200)
+})
+
+// Run the server!
+fastify.listen({port: 3000, host: hostname}, function (err, address) {
+    if (err) {
+        fastify.log.error(err)
+        process.exit(1)
+    }
+    // Server is now listening on ${address}
 })
