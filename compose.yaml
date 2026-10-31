@@ -24,8 +24,10 @@
       - "30022:3000"
     environment:
       NODE_ENV: $NODE_ENV
-      HOST: $NODE_HOST
-    
+      NODE_HOST: $NODE_HOST
+      NODE_PORT: $NODE_PORT
+      NODE_API_KEY: $NODE_API_KEY
+
   db:
     image: postgres
     restart: always
