@@ -4,7 +4,7 @@ import {buildApp} from "./app.js";
 // This  block of code doesn't matter for containers
 //----------------------------------------------------------------------------------------------------
 try {                                                                                              // |
-    process.loadEnvFile('../.env')                                                           // |
+    process.loadEnvFile('../.env')                                                            // |
 }                                                                                                  // |
 catch (e) {                                                                                        // |
     console.log('[Environment Variables could not be found in the environment file provided]\n')   // |
