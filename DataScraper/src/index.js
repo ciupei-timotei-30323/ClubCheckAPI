@@ -3,7 +3,7 @@ import {loggerConfig} from './middleware/logger.js'
 
 process.loadEnvFile()
 const fastify = Fastify({logger: loggerConfig})
-const hostname = process.env.HOST|| '127.0.0.1';
+const hostname = process.env.HOST|| '0.0.0.0';
 const port = 3000;
 
 
