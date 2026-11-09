@@ -19,7 +19,7 @@ const loggerConfig = getLoggerConfig({enviroment})
 const hostname = process.env.NODE_HOST|| '0.0.0.0';
 const port =  process.env.NODE_PORT || 3000;
 const serverKey = process.env.NODE_API_KEY || ''
-
+const connectionString = process.env.NODE_DATABASE_URL_POOLED || ''
 
 
 // fastify.route({
@@ -46,7 +46,7 @@ const serverKey = process.env.NODE_API_KEY || ''
 // })
 
 // Build the app
-const app = await buildApp({logger: loggerConfig, apiKey: serverKey})
+const app = await buildApp({logger: loggerConfig, apiKey: serverKey, connString: connectionString})
 
 // Run the server!
 app.listen({port: port, host: hostname}, () => app.log.info("live on http://" + hostname + ":" + port))
