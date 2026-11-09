@@ -47,7 +47,7 @@ jobs:
       image: ${{ steps.img.outputs.name }}
     steps:
       - uses: actions/checkout@v4
-
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - name: Log into registry
@@ -68,6 +68,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: DataScraper
           file: DataScraper/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
