@@ -26,4 +26,6 @@ exports.up = (pgm) => {
     pgm.createIndex('posts', 'userId');
 };
 
-exports.down = (pgm) => {};
+
+exports.down = (pgm) => {
+};

@@ -11,14 +11,17 @@ export async function buildApp(opts) {
     
     const app = Fastify(opts)
 
-    app.log.info("Connecting to the database")
-    let pool = await getPool({connString: opts.connString})
-    app.log.info(pool.msg)
+
         
 
     app.log.info("Registering Error Handler")
     
     app.setErrorHandler(errorHandler)
+
+    app.log.info("Connecting to the database")
+    let pool = await getPool({connString: opts.connString})
+    app.log.info(pool.msg)
+    
     
     // Register routes
     app.log.info("Registering Routes")
