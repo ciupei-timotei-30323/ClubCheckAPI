@@ -31,8 +31,7 @@ env:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       image: ${{ steps.img.outputs.name }}
     permissions:
@@ -126,7 +125,7 @@ jobs:
   deploy:
     needs: build            # only runs if tests + build succeeded
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       id-token: write
       contents: read
