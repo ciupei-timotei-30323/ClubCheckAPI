@@ -23,10 +23,11 @@
     ports:
       - "30022:3000"
     environment:
-      NODE_ENV: $NODE_ENV
-      NODE_HOST: $NODE_HOST
-      NODE_PORT: $NODE_PORT
-      NODE_API_KEY: $NODE_API_KEY
+      - NODE_ENV=${NODE_ENV}
+      - NODE_HOST=${NODE_HOST}
+      - NODE_PORT=${NODE_PORT}
+      - NODE_API_KEY=${NODE_API_KEY}
+      - NODE_DATABASE_URL_POOLED=${NODE_DATABASE_URL_POOLED}
 
   db:
     image: postgres

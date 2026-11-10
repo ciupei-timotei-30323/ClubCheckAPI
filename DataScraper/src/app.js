@@ -3,7 +3,7 @@ import {errorHandler} from "./middleware/errorHandler.js";
 import {helloRoute} from "./api/helloRoute.js";
 import {scrapeRoute} from "./api/scrapeRoute.js";
 import {getPool} from "./config/database.js";
-
+import { setDefaultBackendFactory, createPostgresBackend, Queue } from 'bullmq';
 
 export async function buildApp(opts) {
     
@@ -22,6 +22,9 @@ export async function buildApp(opts) {
     let pool = await getPool({connString: opts.connString})
     app.log.info(pool.msg)
     
+    //Set BullMQ default backend as Postgres
+    setDefaultBackendFactory(createPostgresBackend)
+
     
     // Register routes
     app.log.info("Registering Routes")

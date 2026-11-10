@@ -6,7 +6,7 @@ export async function scrapeRoute(app, {apiKey, pool}) {
     url: '/scrape',
     schema: {
         response: {
-            200: {}
+            202: {}
         }
     },
     preHandler: async function(req, res) {
@@ -20,7 +20,7 @@ export async function scrapeRoute(app, {apiKey, pool}) {
     },
     handler: async function(req, res) {
         res.log.info('Scraper endpoint called successfully')
-        const result = await scrapeService(pool)
+        const result = await scrapeService(pool, res.log)
         return await res.status(result.status).send(result.msg)
     }
 })
