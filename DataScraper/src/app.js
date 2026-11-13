@@ -46,6 +46,8 @@ export async function buildApp(opts) {
     app.addHook('onClose', async () => {
         app.log.info('Closing scrape queue')
         await queue.close()
+        app.log.info('Closing database pool')
+        await pool.pool.end()
     })
 
     

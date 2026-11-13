@@ -112,6 +112,26 @@ test('scrape processor calls the API, reports progress and returns the text', as
     assert.ok(job.logs.some(message => message.includes('Scraping https://example.com')))
 })
 
+test('scrape processor includes post-processing enrichment in the result', async () => {
+    const job = createJob({ url: 'https://example.com' })
+    const processor = createScrapeProcessor({
+        scraperApiUrl: 'https://scraper.test/extract',
+        logger: createLogger(),
+        httpClient: { request: async () => ({ data: 'scraped text' }) },
+        onScraped: async ({ url, text }) => ({ structured: { url, text } })
+    })
+
+    const result = await processor(job)
+
+    assert.deepStrictEqual(result.enrichment, {
+        structured: { url: 'https://example.com', text: 'scraped text' }
+    })
+    assert.deepStrictEqual(
+        job.progressUpdates.map(update => update.stage),
+        ['started', 'fetching', 'received', 'post-processing', 'completed']
+    )
+})
+
 test('scrape processor rejects jobs without a target url', async () => {
     const processor = createScrapeProcessor({
         scraperApiUrl: 'https://scraper.test/extract',

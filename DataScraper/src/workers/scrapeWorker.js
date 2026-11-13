@@ -134,9 +134,13 @@ export function createScrapeProcessor({
             }
 
             if (onScraped) {
-                log.debug({ progress: 90 }, 'Persisting scraped text')
-                await job.updateProgress({ stage: 'persisting', percent: 90 })
-                await onScraped({ ...result, job })
+                log.debug({ progress: 90 }, 'Post-processing scraped text')
+                await job.updateProgress({ stage: 'post-processing', percent: 90 })
+                const enrichment = await onScraped({ ...result, job })
+
+                if (enrichment !== undefined) {
+                    result.enrichment = enrichment
+                }
             }
 
             await job.updateProgress({ stage: 'completed', percent: 100 })
