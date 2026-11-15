@@ -1,3 +1,5 @@
+import { cleanScrapedText } from './textCleaning.js'
+
 function collectText(value) {
     if (value === null || value === undefined) {
         return ''
@@ -87,6 +89,75 @@ export function extractScrapedText(payload) {
     }
 
     return collectText(data)
+}
+
+
+function metadataString(metadata, keys) {
+    for (const key of keys) {
+        const value = metadata.get(key)
+
+        if (typeof value === 'string' && value.trim()) {
+            return cleanScrapedText(value)
+        }
+
+        if (Array.isArray(value)) {
+            const first = value.find(item => typeof item === 'string' && item.trim())
+            if (first) {
+                return cleanScrapedText(first)
+            }
+        }
+    }
+
+    return null
+}
+
+/**
+ * Extracts the page metadata useful for event extraction. Firecrawl exposes
+ * poster images as `image` or `og:image`, and some sources expose the organizer
+ * through organizer/promoter/author metadata.
+ */
+export function extractPageMetadata(payload) {
+    const data = payload?.data ?? payload
+    const rawMetadata = data?.metadata ?? payload?.metadata
+
+    if (!rawMetadata || typeof rawMetadata !== 'object') {
+        return {
+            title: null,
+            description: null,
+            image: null,
+            organizer: null,
+            siteName: null,
+            sourceUrl: null
+        }
+    }
+
+    const metadata = new Map(
+        Object.entries(rawMetadata).map(([key, value]) => [key.toLowerCase(), value])
+    )
+
+    return {
+        title: metadataString(metadata, ['title', 'og:title']),
+        description: metadataString(metadata, ['description', 'og:description']),
+        image: metadataString(metadata, [
+            'image',
+            'og:image',
+            'og:image:url',
+            'ogimage',
+            'twitter:image',
+            'twitterimage'
+        ]),
+        organizer: metadataString(metadata, [
+            'organizer',
+            'event:organizer',
+            'eventorganizer',
+            'promoter',
+            'host',
+            'author',
+            'creator'
+        ]),
+        siteName: metadataString(metadata, ['og:site_name', 'sitename', 'publisher']),
+        sourceUrl: metadataString(metadata, ['sourceurl', 'source_url', 'url', 'og:url'])
+    }
 }
 
 export function extractEmbeddedClassification(payload) {

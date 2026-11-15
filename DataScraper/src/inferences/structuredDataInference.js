@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { cleanScrapedText } from '../utils/textCleaning.js'
 
 const CURRENCY_CODES = ['EUR', 'RON', 'USD', 'HUF']
 
@@ -43,9 +44,15 @@ const eventSchema = z.object({
         'Event end date/time as ISO 8601, or null when the source does not specify it.'
     ),
     description: z.string().max(800).nullable().describe('Event description, at most 800 characters, or null.'),
+    organizer: z.string().max(400).nullable().describe(
+        'The single event organizer or promoter. Use metadata or the description, or null when unknown.'
+    ),
     price: priceSchema.nullable().describe('Ticket price, or null when no price is present.'),
     ticketUrl: z.url().nullable().describe('Absolute URL where tickets can be purchased, or null.'),
     announcementUrl: z.url().nullable().describe('Absolute URL of the event announcement, or null.'),
+    posterUrl: z.url().nullable().describe(
+        'Absolute URL of the event poster image, preferably from metadata image or og:image, or null.'
+    ),
     venueName: z.string().min(1).max(100).describe(
         'Name of the venue. This references the matching item in the top-level venues array.'
     ),
@@ -151,6 +158,8 @@ Mapping rules:
 - Use the currency code EUR, RON, USD or HUF for prices. If the currency is unknown, omit the price instead of guessing.
 - URLs must be absolute. Resolve relative links against the source URL.
 - Limit event descriptions to 800 characters. Do not include navigation, cookie banners, or other boilerplate as event content.
+- An event has exactly one organizer. Prefer organizer/promoter metadata when present; otherwise extract the organizer from the event description. Do not use the venue or artists as the organizer unless the page explicitly identifies them as the organizer.
+- For posterUrl, prefer the page metadata image or og:image value. Resolve it to an absolute URL. When the page contains multiple events, only use the metadata image if it clearly belongs to that event. Never invent a poster URL.
 - Deduplicate venues, artists and genres by name.
 - Return empty arrays when nothing of that type is present.`
 
@@ -163,15 +172,76 @@ export class StructuredDataExtractionError extends Error {
     }
 }
 
-export function buildExtractionPrompt({ text, sourceUrl, now = new Date() }) {
+function formatMetadataValue(value) {
+    return typeof value === 'string' && value.trim()
+        ? cleanScrapedText(value)
+        : null
+}
+
+function buildMetadataPrompt(metadata) {
+    const fields = [
+        ['title', formatMetadataValue(metadata?.title)],
+        ['description', formatMetadataValue(metadata?.description)],
+        ['image', formatMetadataValue(metadata?.image)],
+        ['organizer', formatMetadataValue(metadata?.organizer)],
+        ['site_name', formatMetadataValue(metadata?.siteName)],
+        ['source_url', formatMetadataValue(metadata?.sourceUrl)]
+    ].filter(([, value]) => value)
+
+    return fields.length > 0
+        ? `Page metadata: ${fields.map(([key, value]) => `${key}=${value}`).join(' | ')}`
+        : 'Page metadata: none found.'
+}
+
+export function buildExtractionPrompt({ text, sourceUrl, metadata, now = new Date() }) {
     return `Source URL: ${sourceUrl}
 Current UTC time: ${now.toISOString()}
+
+${buildMetadataPrompt(metadata)}
 
 Extract the ClubCheckAPI data from the page text below.
 
 <page_text>
 ${text}
 </page_text>`
+}
+
+function toAbsoluteHttpUrl(value, baseUrl) {
+    if (typeof value !== 'string' || !value.trim()) {
+        return null
+    }
+
+    try {
+        const url = new URL(value, baseUrl)
+        return url.protocol === 'http:' || url.protocol === 'https:'
+            ? url.toString()
+            : null
+    } catch {
+        return null
+    }
+}
+
+function applyMetadataFallbacks(structured, { metadata, sourceUrl }) {
+    const organizer = formatMetadataValue(metadata?.organizer)?.slice(0, 400) || null
+    const metadataPosterUrl = toAbsoluteHttpUrl(metadata?.image, sourceUrl)
+
+    // A single og:image can safely act as the poster for a single-event page.
+    // For multi-event pages, assigning the same image to every event would be
+    // misleading, so leave it to Gemini's page-specific extraction.
+    const posterUrl = structured.events.length === 1 ? metadataPosterUrl : null
+
+    if (!organizer && !posterUrl) {
+        return structured
+    }
+
+    return {
+        ...structured,
+        events: structured.events.map(event => ({
+            ...event,
+            organizer: event.organizer || organizer,
+            posterUrl: event.posterUrl || posterUrl
+        }))
+    }
 }
 
 function parseJsonOutput(outputText) {
@@ -210,19 +280,21 @@ export function createStructuredDataExtractor({
         throw new Error('createStructuredDataExtractor requires a logger')
     }
 
-    async function extract({ text, sourceUrl }) {
-        if (!text?.trim()) {
+    async function extract({ text, sourceUrl, metadata = null }) {
+        const cleanedText = cleanScrapedText(text)
+
+        if (!cleanedText) {
             throw new StructuredDataExtractionError('Cannot extract structured data from empty text')
         }
 
         const log = logger.child({ sourceUrl, model })
-        const inputText = text.length > maxInputCharacters
-            ? `${text.slice(0, maxInputCharacters)}\n\n[TRUNCATED: ${text.length - maxInputCharacters} characters omitted]`
-            : text
+        const inputText = cleanedText.length > maxInputCharacters
+            ? `${cleanedText.slice(0, maxInputCharacters)} [TRUNCATED: ${cleanedText.length - maxInputCharacters} characters omitted]`
+            : cleanedText
 
-        if (inputText.length !== text.length) {
+        if (inputText.length !== cleanedText.length) {
             log.warn(
-                { characters: text.length, maxInputCharacters },
+                { characters: cleanedText.length, maxInputCharacters },
                 'Scraped text truncated before Gemini extraction'
             )
         }
@@ -232,7 +304,7 @@ export function createStructuredDataExtractor({
         const interaction = await ai.interactions.create({
             model,
             system_instruction: systemInstruction,
-            input: buildExtractionPrompt({ text: inputText, sourceUrl }),
+            input: buildExtractionPrompt({ text: inputText, sourceUrl, metadata }),
             response_format: [{
                 type: 'text',
                 mime_type: 'application/json',
@@ -289,7 +361,7 @@ export function createStructuredDataExtractor({
             interactionId: interaction.id ?? null,
             usage: interaction.usage ?? null,
             extractedAt: new Date().toISOString(),
-            structured: validation.data
+            structured: applyMetadataFallbacks(validation.data, { metadata, sourceUrl })
         }
 
         log.info(

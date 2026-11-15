@@ -22,8 +22,9 @@ test('scrape ingestion pipeline runs extraction before ingestion and reports pro
 
     const pipeline = createScrapeIngestionPipeline({
         structuredDataExtractor: {
-            async extract({ sourceUrl }) {
+            async extract({ sourceUrl, metadata }) {
                 order.push('extract')
+                assert.strictEqual(metadata.image, 'https://example.com/poster.jpg')
                 return { sourceUrl, structured: { events: [{ name: 'Event' }] } }
             }
         },
@@ -42,6 +43,7 @@ test('scrape ingestion pipeline runs extraction before ingestion and reports pro
     const result = await pipeline({
         url: 'https://source.example',
         text: 'scraped text',
+        metadata: { image: 'https://example.com/poster.jpg' },
         job
     })
 

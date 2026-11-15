@@ -59,6 +59,10 @@ test('source scrape service uses embedded LLM classification and routes only mus
             return {
                 data: {
                     markdown: url.endsWith('/music') ? 'Live concert' : 'Theatre play',
+                    metadata: {
+                        'og:image': 'https://source.example/poster.jpg',
+                        organizer: 'Example Promoter'
+                    },
                     json: {
                         is_music: url.endsWith('/music'),
                         certainty: 'clear'
@@ -99,6 +103,8 @@ test('source scrape service uses embedded LLM classification and routes only mus
         onMusicEvent: async payload => {
             downstream.push(payload.url)
             assert.strictEqual(payload.classification.source, 'firecrawl-llm')
+            assert.strictEqual(payload.metadata.image, 'https://source.example/poster.jpg')
+            assert.strictEqual(payload.metadata.organizer, 'Example Promoter')
         }
     })
 

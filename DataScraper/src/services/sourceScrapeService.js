@@ -1,6 +1,7 @@
 import {
     extractEmbeddedClassification,
     extractLinks,
+    extractPageMetadata,
     extractScrapedText,
     normalizeDiscoveredLinks
 } from '../utils/scraperPayload.js'
@@ -80,6 +81,7 @@ export function createSourceScrapeService({
             return {
                 payload,
                 text: extractScrapedText(payload),
+                metadata: extractPageMetadata(payload),
                 classification: {
                     music: true,
                     source: 'source-config'
@@ -104,6 +106,7 @@ export function createSourceScrapeService({
                 return {
                     payload,
                     text,
+                    metadata: extractPageMetadata(payload),
                     classification: {
                         ...embedded,
                         source: 'firecrawl-llm'
@@ -132,6 +135,7 @@ export function createSourceScrapeService({
         return {
             payload,
             text,
+            metadata: extractPageMetadata(payload),
             classification: {
                 ...classification,
                 source: 'groq'
@@ -261,7 +265,7 @@ export function createSourceScrapeService({
             })
 
             try {
-                const { text, classification } = await scrapeAndClassify({
+                const { text, metadata, classification } = await scrapeAndClassify({
                     source,
                     link,
                     includeTags,
@@ -296,6 +300,7 @@ export function createSourceScrapeService({
                         await onMusicEvent({
                             url: link,
                             text,
+                            metadata,
                             source,
                             classification,
                             job,
