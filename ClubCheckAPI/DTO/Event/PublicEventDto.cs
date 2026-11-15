@@ -20,9 +20,13 @@ public record PublicEventDto()
     [MaxLength(800)]
     public string? Description { get; set; }
     
+    [MaxLength(400)]
+    public string? Organizer { get; set; }
     
     public Uri? AnnouncementUrl { get; set; }
     public Uri? TicketUrl { get; set; }
+    
+    public Uri? PosterUrl { get; set; }
     public Price?  Price { get; set; }
     public DateTime? EndDate { get; set; }
     
@@ -40,6 +44,6 @@ public record PublicEventDto()
     public override string ToString()
     {
         return
-            $"{nameof(Slug)}: {Slug}, {nameof(Name)}: {Name}, {nameof(StartDate)}: {StartDate}, {nameof(Description)}: {Description}, {nameof(AnnouncementUrl)}: {AnnouncementUrl}, {nameof(TicketUrl)}: {TicketUrl}, {nameof(Price)}: {Price}, {nameof(EndDate)}: {EndDate}, {nameof(VenueName)}: {VenueName}, {nameof(GenresName)}: {GenresName}, {nameof(ArtistsSummary)}: {ArtistsSummary}";
+            $"{nameof(Slug)}: {Slug}, {nameof(Name)}: {Name}, {nameof(StartDate)}: {StartDate}, {nameof(Description)}: {Description}, {nameof(Organizer)}: {Organizer}, {nameof(AnnouncementUrl)}: {AnnouncementUrl}, {nameof(TicketUrl)}: {TicketUrl}, {nameof(Price)}: {Price}, {nameof(EndDate)}: {EndDate}, {nameof(VenueName)}: {VenueName}, {nameof(GenresName)}: {GenresName}, {nameof(ArtistsSummary)}: {ArtistsSummary}";
     }
 }

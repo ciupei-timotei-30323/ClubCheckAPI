@@ -18,6 +18,9 @@ public class Event
 
     [MaxLength(800)] public string? Description { get; set; }
 
+    [MaxLength(400)] public string? Organizer { get; set; }
+    
+    
     // [DeleteBehavior(DeleteBehavior.SetNull)]
     public ICollection<Artist> Artists { get; set; } = [];
 
@@ -35,4 +38,6 @@ public class Event
     public Uri? TicketUrl { get; set; }
 
     public Uri? AnnouncementUrl { get; set; }
+    
+    public Uri? PosterUrl { get; set; }
 }

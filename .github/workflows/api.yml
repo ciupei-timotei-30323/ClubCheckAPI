@@ -31,7 +31,8 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+
+    runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.img.outputs.name }}
     permissions:
@@ -98,8 +99,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha, scope=api
-          cache-to: type=gha,mode=max, scope=api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
@@ -125,7 +126,7 @@ jobs:
   deploy:
     needs: build            # only runs if tests + build succeeded
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read

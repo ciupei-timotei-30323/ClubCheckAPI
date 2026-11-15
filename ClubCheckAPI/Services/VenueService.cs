@@ -98,6 +98,7 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
             Slug = e.Slug,
             StartDate = e.StartDate,
             TicketUrl = e.TicketUrl,
+            PosterUrl = e.PosterUrl,
             VenueName = e.Venue.Name
         }).ToList()
     };
