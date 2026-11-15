@@ -51,6 +51,7 @@ export function toCreateEventDto(event, { venueId, genreIds, artistIds }) {
         isActive: event.isActive,
         endDate: event.endDate ?? null,
         description: event.description ?? null,
+        organizer: event.organizer ?? null,
         price: event.price
             ? {
                 value: event.price.value,
@@ -59,6 +60,7 @@ export function toCreateEventDto(event, { venueId, genreIds, artistIds }) {
             : null,
         ticketUrl: event.ticketUrl ?? null,
         announcementUrl: event.announcementUrl ?? null,
+        posterUrl: event.posterUrl ?? null,
         venueId,
         genresId: [...new Set(genreIds)],
         artistsId: [...new Set(artistIds)]

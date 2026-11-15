@@ -34,9 +34,11 @@ const validStructuredData = {
         isActive: true,
         endDate: null,
         description: 'A test event.',
+        organizer: 'Test Promoter',
         price: { value: 50, currency: 'RON' },
         ticketUrl: 'https://tickets.example.com/test-event',
         announcementUrl: null,
+        posterUrl: 'https://example.com/poster.jpg',
         venueName: 'Test Venue',
         artistNames: ['Test Artist'],
         genreNames: ['Techno']
@@ -96,7 +98,7 @@ test('structured extractor calls Gemini with the ClubCheckAPI schema and validat
     })
 
     const result = await extractor.extract({
-        text: 'Test Event at Test Venue on 31 December 2026.',
+        text: 'Test Event\n\n====\nat Test Venue on 31 December 2026.',
         sourceUrl: 'https://example.com/events/test-event'
     })
 
@@ -109,8 +111,12 @@ test('structured extractor calls Gemini with the ClubCheckAPI schema and validat
     assert.strictEqual(request.store, false)
     assert.match(request.input, /Source URL: https:\/\/example\.com\/events\/test-event/)
     assert.match(request.input, /<page_text>/)
+    assert.match(request.input, /Test Event at Test Venue on 31 December 2026\./)
+    assert.doesNotMatch(request.input, /====/)
 
     assert.strictEqual(result.structured.events[0].name, 'Test Event')
+    assert.strictEqual(result.structured.events[0].organizer, 'Test Promoter')
+    assert.strictEqual(result.structured.events[0].posterUrl, 'https://example.com/poster.jpg')
     assert.strictEqual(result.structured.venues[0].address.city, 'Cluj-Napoca')
     assert.strictEqual(result.structured.artists[0].slug, 'test-artist')
     assert.strictEqual(result.interactionId, 'interaction-1')
@@ -131,6 +137,38 @@ test('structured extractor accepts JSON wrapped in a code fence', async () => {
     })
 
     assert.strictEqual(result.structured.events.length, 1)
+})
+
+test('structured extractor uses metadata for organizer and poster fallbacks', async () => {
+    const response = JSON.parse(JSON.stringify(validStructuredData))
+    response.events[0].organizer = null
+    response.events[0].posterUrl = null
+
+    const ai = createAi(JSON.stringify(response))
+    const extractor = createStructuredDataExtractor({
+        ai,
+        model: 'gemini-4-hydrogen',
+        logger: createLogger()
+    })
+
+    const result = await extractor.extract({
+        text: 'Event description mentioning the promoter.',
+        sourceUrl: 'https://example.com/events/test-event',
+        metadata: {
+            title: 'Test Event',
+            image: '/images/poster.jpg',
+            organizer: 'Metadata Promoter',
+            siteName: 'Example'
+        }
+    })
+
+    assert.match(ai.calls[0].input, /image=\/images\/poster\.jpg/)
+    assert.match(ai.calls[0].input, /organizer=Metadata Promoter/)
+    assert.strictEqual(result.structured.events[0].organizer, 'Metadata Promoter')
+    assert.strictEqual(
+        result.structured.events[0].posterUrl,
+        'https://example.com/images/poster.jpg'
+    )
 })
 
 test('structured extractor rejects a failed Gemini interaction', async () => {

@@ -17,7 +17,6 @@ public class Event
 
 
     [MaxLength(800)] public string? Description { get; set; }
-
     [MaxLength(400)] public string? Organizer { get; set; }
     
     

@@ -27,9 +27,11 @@ const structured = {
             isActive: true,
             endDate: null,
             description: 'First event',
+            organizer: 'Promoter One',
             price: { value: 50, currency: 'RON' },
             ticketUrl: 'https://tickets.example/1',
             announcementUrl: null,
+            posterUrl: 'https://tickets.example/poster-1.jpg',
             venueName: 'Venue One',
             artistNames: ['Artist One'],
             genreNames: ['Techno']
@@ -40,9 +42,11 @@ const structured = {
             isActive: true,
             endDate: null,
             description: null,
+            organizer: null,
             price: null,
             ticketUrl: null,
             announcementUrl: null,
+            posterUrl: null,
             venueName: 'Venue One',
             artistNames: ['Artist One', 'Artist Two'],
             genreNames: ['Techno']

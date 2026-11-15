@@ -19,12 +19,16 @@ export function createScrapeIngestionPipeline({
         throw new Error('createScrapeIngestionPipeline requires a logger')
     }
 
-    return async function processScrapedText({ url, text, job, onProgress }) {
+    return async function processScrapedText({ url, text, metadata, job, onProgress }) {
         const log = logger.child({ sourceUrl: url, jobId: job.id })
         const updateProgress = onProgress ?? (progress => job.updateProgress(progress))
 
         await updateProgress({ stage: 'inferring', percent: 92 })
-        const inference = await structuredDataExtractor.extract({ text, sourceUrl: url })
+        const inference = await structuredDataExtractor.extract({
+            text,
+            sourceUrl: url,
+            metadata
+        })
 
         await updateProgress({ stage: 'inferred', percent: 94 })
         const ingestion = await eventIngestionService.ingest(inference.structured, {

@@ -3,6 +3,7 @@ import assert from 'node:assert'
 import {
     extractEmbeddedClassification,
     extractLinks,
+    extractPageMetadata,
     extractScrapedText,
     normalizeDiscoveredLinks
 } from '../utils/scraperPayload.js'
@@ -32,6 +33,41 @@ test('extractScrapedText prefers readable fields and flattens tag objects', () =
         'h1: Event name\n.date: Tomorrow'
     )
     assert.strictEqual(extractScrapedText({ data: 'plain text' }), 'plain text')
+})
+
+test('extractPageMetadata reads organizer and poster metadata', () => {
+    assert.deepStrictEqual(
+        extractPageMetadata({
+            data: {
+                markdown: 'Page',
+                metadata: {
+                    title: 'Event title',
+                    description: 'Event description',
+                    'og:image': 'https://example.com/poster.jpg',
+                    organizer: 'Example Promoter',
+                    'og:site_name': 'Example Site',
+                    sourceURL: 'https://example.com/event'
+                }
+            }
+        }),
+        {
+            title: 'Event title',
+            description: 'Event description',
+            image: 'https://example.com/poster.jpg',
+            organizer: 'Example Promoter',
+            siteName: 'Example Site',
+            sourceUrl: 'https://example.com/event'
+        }
+    )
+})
+
+test('extractPageMetadata falls back to the image metadata key', () => {
+    const metadata = extractPageMetadata({
+        metadata: { image: '/poster.jpg' }
+    })
+
+    assert.strictEqual(metadata.image, '/poster.jpg')
+    assert.strictEqual(metadata.title, null)
 })
 
 test('extractEmbeddedClassification reads Firecrawl embedded JSON output', () => {

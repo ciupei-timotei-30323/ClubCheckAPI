@@ -142,10 +142,10 @@ if (geminiApiKey) {
         app.log.warn(
             'NODE_CLUBCHECK_API_URL or NODE_CLUBCHECK_API_KEY is not set; only structured extraction will run'
         )
-        onMusicEvent = async ({url, text, job, onProgress}) => {
+        onMusicEvent = async ({url, text, metadata, job, onProgress}) => {
             const updateProgress = onProgress ?? (progress => job.updateProgress(progress))
             await updateProgress({stage: 'inferring', percent: 92})
-            const inference = await extractor.extract({text, sourceUrl: url})
+            const inference = await extractor.extract({text, sourceUrl: url, metadata})
             await updateProgress({stage: 'inferred', percent: 99})
             return inference
         }
