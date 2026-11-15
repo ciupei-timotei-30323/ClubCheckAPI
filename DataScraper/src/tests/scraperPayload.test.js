@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert'
 import {
+    extractEmbeddedClassification,
     extractLinks,
     extractScrapedText,
     normalizeDiscoveredLinks
@@ -31,6 +32,22 @@ test('extractScrapedText prefers readable fields and flattens tag objects', () =
         'h1: Event name\n.date: Tomorrow'
     )
     assert.strictEqual(extractScrapedText({ data: 'plain text' }), 'plain text')
+})
+
+test('extractEmbeddedClassification reads Firecrawl embedded JSON output', () => {
+    assert.deepStrictEqual(
+        extractEmbeddedClassification({
+            data: { json: { is_music: true, certainty: 'clear' } }
+        }),
+        { music: true, certainty: 'clear' }
+    )
+    assert.deepStrictEqual(
+        extractEmbeddedClassification({
+            data: { json: '{"is_music":false,"certainty":"likely"}' }
+        }),
+        { music: false, certainty: 'likely' }
+    )
+    assert.strictEqual(extractEmbeddedClassification({ data: { markdown: 'No JSON' } }), null)
 })
 
 test('normalizeDiscoveredLinks resolves relative URLs and removes fragments', () => {

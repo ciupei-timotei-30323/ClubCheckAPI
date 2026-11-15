@@ -33,12 +33,14 @@ test('scrape service queries source configuration and enqueues source jobs', asy
                             id: 1,
                             url: 'https://sitemap.example',
                             sitemap_available: true,
+                            has_non_music_events: true,
                             includeTags: '["h1", ".date"]'
                         },
                         {
                             id: 2,
                             url: 'https://links.example',
                             sitemap_available: false,
+                            has_non_music_events: false,
                             includeTags: '.artist-summary'
                         }
                     ]
@@ -80,11 +82,13 @@ test('scrape service queries source configuration and enqueues source jobs', asy
                 id: 1,
                 url: 'https://sitemap.example',
                 sitemapAvailable: true,
+                hasNonMusicEvents: true,
                 includeTags: ['h1', '.date']
             }
         }
     })
     assert.deepStrictEqual(scrapeJobs[1].data.source.includeTags, ['.artist-summary'])
+    assert.strictEqual(scrapeJobs[1].data.source.hasNonMusicEvents, false)
     assert.deepStrictEqual(apiJobs, [
         { name: 'api', data: { url: 'https://api.example/events' } }
     ])

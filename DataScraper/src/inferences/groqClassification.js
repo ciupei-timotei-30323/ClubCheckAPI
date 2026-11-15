@@ -8,6 +8,95 @@ export class GroqClassificationError extends Error {
 
 export const GROQ_CLASSIFICATION_SYSTEM_PROMPT = `You classify events. For each event decide if it is a music event (concert, gig, festival with live music, DJ/club night, recital, open mic). Not music: theatre, stand-up, sports, conferences, exhibitions, workshops, unless music is the main attraction. Reply ONLY with JSON: {"results":[{"id":<int>,"music":<true|false>}]}`
 
+function parseSecondsOrDate(value) {
+    if (value === null || value === undefined || value === '') {
+        return null
+    }
+
+    const numeric = Number(value)
+    if (Number.isFinite(numeric)) {
+        return Math.max(0, numeric * 1_000)
+    }
+
+    const date = Date.parse(value)
+    return Number.isNaN(date) ? null : Math.max(0, date - Date.now())
+}
+
+function parseMilliseconds(value) {
+    if (value === null || value === undefined || value === '') {
+        return null
+    }
+
+    const numeric = Number(value)
+    return Number.isFinite(numeric) ? Math.max(0, numeric) : null
+}
+
+function getHeader(headers, name) {
+    if (!headers) {
+        return undefined
+    }
+
+    if (typeof headers.get === 'function') {
+        return headers.get(name)
+    }
+
+    return headers[name] ??
+        headers[name.toLowerCase()] ??
+        headers[name.toUpperCase()]
+}
+
+function extractRateLimitCooldownMs(error, fallbackMs) {
+    const headers = error?.headers ?? error?.response?.headers ?? {}
+    const retryAfterHeader = parseSecondsOrDate(getHeader(headers, 'retry-after'))
+
+    if (retryAfterHeader !== null) {
+        return retryAfterHeader
+    }
+
+    const body = error?.error ?? error?.response?.data ?? {}
+
+    for (const key of ['retry_after_ms', 'retryAfterMs', 'cooldown_ms', 'cooldownMs']) {
+        const milliseconds = parseMilliseconds(body?.[key])
+        if (milliseconds !== null) {
+            return milliseconds
+        }
+    }
+
+    for (const key of ['retry_after', 'retryAfter', 'cooldown']) {
+        const seconds = parseSecondsOrDate(body?.[key])
+        if (seconds !== null) {
+            return seconds
+        }
+    }
+
+    const messageMatch = String(error?.message ?? '').match(
+        /(?:retry|try again)\s*(?:after|in)?\s*(\d+(?:\.\d+)?)\s*(ms|s|seconds?|minutes?|m)\b/i
+    )
+
+    if (messageMatch) {
+        const amount = Number(messageMatch[1])
+        const unit = messageMatch[2].toLowerCase()
+
+        if (unit === 'ms') {
+            return amount
+        }
+
+        if (unit === 'm' || unit.startsWith('minute')) {
+            return amount * 60_000
+        }
+
+        return amount * 1_000
+    }
+
+    return fallbackMs
+}
+
+function isRateLimitError(error) {
+    return error?.status === 429 ||
+        error?.statusCode === 429 ||
+        error?.response?.status === 429
+}
+
 function parseJsonOutput(output) {
     const trimmed = String(output ?? '').trim()
     const withoutFence = trimmed.startsWith('```')
@@ -40,7 +129,10 @@ export function createGroqClassificationService({
     temperature = 1,
     maxCompletionTokens = 2_048,
     topP = 1,
-    reasoningEffort = 'medium'
+    reasoningEffort = 'medium',
+    maxRateLimitRetries = 5,
+    defaultRateLimitCooldownMs = 60_000,
+    sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 }) {
     if (!groqClient?.chat?.completions?.create) {
         throw new Error('createGroqClassificationService requires a Groq client')
@@ -78,61 +170,98 @@ export function createGroqClassificationService({
         // usage after the request.
         const estimatedInputTokens = Math.max(1, Math.ceil(inputText.length / 4))
         const reservedTokens = estimatedInputTokens + maxCompletionTokens
-        let reservation
-
-        try {
-            reservation = await tokensPerMinuteLimiter.acquire(reservedTokens)
-        } catch (error) {
-            log.error(
-                { err: error, estimatedInputTokens, reservedTokens },
-                'Could not reserve Groq token budget'
-            )
-            throw new GroqClassificationError('Could not reserve Groq token budget', { cause: error })
-        }
-
-        log.info(
-            { estimatedInputTokens, reservedTokens },
-            'Groq token budget acquired'
-        )
-
         let completion
-        try {
-            completion = await groqClient.chat.completions.create({
-                messages: [
-                    { role: 'system', content: GROQ_CLASSIFICATION_SYSTEM_PROMPT },
+
+        for (let attempt = 0; attempt <= maxRateLimitRetries; attempt += 1) {
+            let reservation
+
+            try {
+                reservation = await tokensPerMinuteLimiter.acquire(reservedTokens)
+            } catch (error) {
+                log.error(
+                    { err: error, estimatedInputTokens, reservedTokens },
+                    'Could not reserve Groq token budget'
+                )
+                throw new GroqClassificationError('Could not reserve Groq token budget', { cause: error })
+            }
+
+            log.info(
+                { estimatedInputTokens, reservedTokens, attempt: attempt + 1 },
+                'Groq token budget acquired'
+            )
+
+            try {
+                completion = await groqClient.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: GROQ_CLASSIFICATION_SYSTEM_PROMPT },
+                        {
+                            role: 'user',
+                            content: `Source URL: ${sourceUrl}\n\n${inputText}`
+                        }
+                    ],
+                    model,
+                    temperature,
+                    max_completion_tokens: maxCompletionTokens,
+                    top_p: topP,
+                    stream: false,
+                    reasoning_effort: reasoningEffort,
+                    stop: null
+                })
+
+                const actualTokens = completion?.usage?.total_tokens
+                reservation.reconcile(
+                    Number.isFinite(Number(actualTokens)) ? Number(actualTokens) : reservedTokens
+                )
+
+                log.info(
                     {
-                        role: 'user',
-                        content: `Source URL: ${sourceUrl}\n\n${inputText}`
-                    }
-                ],
-                model,
-                temperature,
-                max_completion_tokens: maxCompletionTokens,
-                top_p: topP,
-                stream: false,
-                reasoning_effort: reasoningEffort,
-                stop: null
-            })
-        } catch (error) {
-            reservation.release()
-            log.error({ err: error }, 'Groq classification request failed')
-            throw new GroqClassificationError('Groq classification request failed', { cause: error })
+                        estimatedInputTokens,
+                        reservedTokens,
+                        actualTokens: Number.isFinite(Number(actualTokens)) ? Number(actualTokens) : null,
+                        usage: completion?.usage ?? null,
+                        attempt: attempt + 1
+                    },
+                    'Groq token usage reconciled'
+                )
+                break
+            } catch (error) {
+                reservation.release()
+
+                if (isRateLimitError(error) && attempt < maxRateLimitRetries) {
+                    const cooldownMs = extractRateLimitCooldownMs(
+                        error,
+                        defaultRateLimitCooldownMs
+                    )
+
+                    log.warn(
+                        {
+                            err: error,
+                            attempt: attempt + 1,
+                            maxRateLimitRetries,
+                            cooldownMs
+                        },
+                        'Groq rate limit reached; waiting before retry'
+                    )
+
+                    await sleep(cooldownMs)
+                    continue
+                }
+
+                log.error(
+                    { err: error, attempt: attempt + 1 },
+                    'Groq classification request failed'
+                )
+                throw new GroqClassificationError('Groq classification request failed', {
+                    cause: error
+                })
+            }
         }
 
-        const actualTokens = completion?.usage?.total_tokens
-        reservation.reconcile(
-            Number.isFinite(Number(actualTokens)) ? Number(actualTokens) : reservedTokens
-        )
-
-        log.info(
-            {
-                estimatedInputTokens,
-                reservedTokens,
-                actualTokens: Number.isFinite(Number(actualTokens)) ? Number(actualTokens) : null,
-                usage: completion?.usage ?? null
-            },
-            'Groq token usage reconciled'
-        )
+        if (!completion) {
+            throw new GroqClassificationError(
+                'Groq classification failed after rate-limit retries'
+            )
+        }
 
         const content = completion?.choices?.[0]?.message?.content
         if (!content) {

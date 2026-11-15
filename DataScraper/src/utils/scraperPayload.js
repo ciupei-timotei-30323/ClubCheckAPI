@@ -89,6 +89,28 @@ export function extractScrapedText(payload) {
     return collectText(data)
 }
 
+export function extractEmbeddedClassification(payload) {
+    const data = payload?.data ?? payload
+    let json = data?.json ?? payload?.json ?? data?.llm_extraction ?? data?.extract ?? null
+
+    if (typeof json === 'string') {
+        try {
+            json = JSON.parse(json)
+        } catch {
+            return null
+        }
+    }
+
+    if (!json || typeof json.is_music !== 'boolean') {
+        return null
+    }
+
+    return {
+        music: json.is_music,
+        certainty: typeof json.certainty === 'string' ? json.certainty : null
+    }
+}
+
 export function normalizeDiscoveredLinks(links, baseUrl) {
     const normalized = []
 

@@ -1,11 +1,47 @@
-import { extractLinks, extractScrapedText, normalizeDiscoveredLinks } from '../utils/scraperPayload.js'
+import {
+    extractEmbeddedClassification,
+    extractLinks,
+    extractScrapedText,
+    normalizeDiscoveredLinks
+} from '../utils/scraperPayload.js'
 
 const MAX_PAGE_URL_LENGTH = 2_000
 
+function normalizedHost(value) {
+    const url = new URL(value)
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, '')
+    return url.port ? `${hostname}:${url.port}` : hostname
+}
+
+function isSameSourceBase(link, sourceUrl) {
+    try {
+        return normalizedHost(link) === normalizedHost(sourceUrl)
+    } catch {
+        return false
+    }
+}
+
+function isSourcePage(link, sourceUrl) {
+    try {
+        const candidate = new URL(link)
+        const source = new URL(sourceUrl)
+
+        if (normalizedHost(link) !== normalizedHost(sourceUrl)) {
+            return false
+        }
+
+        const normalizePath = path => path.replace(/\/+$/, '') || '/'
+        return normalizePath(candidate.pathname) === normalizePath(source.pathname)
+    } catch {
+        return false
+    }
+}
+
 /**
  * Processes one source: discovers links, removes pages already present in the
- * database, scrapes the remainder, classifies them with Groq and forwards music
- * pages to the downstream ingestion callback.
+ * database, classifies the remainder using the source configuration or
+ * Firecrawl's embedded LLM (with Groq as fallback), and forwards music pages to
+ * the downstream ingestion callback.
  */
 export function createSourceScrapeService({
     scraperApiClient,
@@ -37,6 +73,72 @@ export function createSourceScrapeService({
         return normalizeDiscoveredLinks(extractLinks(payload), source.url)
     }
 
+    async function scrapeAndClassify({ source, link, includeTags, log }) {
+        if (source.hasNonMusicEvents === false) {
+            const payload = await scraperApiClient.scrapePage(link, includeTags)
+
+            return {
+                payload,
+                text: extractScrapedText(payload),
+                classification: {
+                    music: true,
+                    source: 'source-config'
+                }
+            }
+        }
+
+        let payload
+        let text
+
+        try {
+            payload = await scraperApiClient.classifyPage(link, includeTags)
+            text = extractScrapedText(payload)
+            const embedded = extractEmbeddedClassification(payload)
+
+            if (embedded) {
+                log.info(
+                    { page: link, music: embedded.music, certainty: embedded.certainty },
+                    'Embedded LLM classification completed'
+                )
+
+                return {
+                    payload,
+                    text,
+                    classification: {
+                        ...embedded,
+                        source: 'firecrawl-llm'
+                    }
+                }
+            }
+
+            log.warn(
+                { page: link },
+                'Embedded LLM returned no classification; falling back to Groq'
+            )
+        } catch (error) {
+            log.error(
+                { err: error, page: link },
+                'Embedded LLM classification failed; falling back to Groq'
+            )
+            payload = await scraperApiClient.scrapePage(link, includeTags)
+            text = extractScrapedText(payload)
+        }
+
+        const classification = await groqClassificationService.classify({
+            text,
+            sourceUrl: link
+        })
+
+        return {
+            payload,
+            text,
+            classification: {
+                ...classification,
+                source: 'groq'
+            }
+        }
+    }
+
     async function processSource({ source, job, onMusicEvent }) {
         if (!source?.id || !source?.url) {
             throw new Error('processSource requires a source with id and url')
@@ -53,10 +155,18 @@ export function createSourceScrapeService({
             music: 0,
             discarded: 0,
             failed: 0,
-            skippedInvalidUrl: 0
+            skippedInvalidUrl: 0,
+            skippedExternalUrl: 0,
+            skippedSourceUrl: 0
         }
 
-        log.info({ sitemapAvailable: source.sitemapAvailable }, 'Discovering source links')
+        log.info(
+            {
+                sitemapAvailable: source.sitemapAvailable,
+                hasNonMusicEvents: source.hasNonMusicEvents
+            },
+            'Discovering source links'
+        )
         await job.updateProgress({ stage: 'discovering-links', percent: 5 })
 
         const discoveredLinks = await discoverLinks(source)
@@ -69,7 +179,45 @@ export function createSourceScrapeService({
             discovered: discoveredLinks.length
         })
 
-        const validLinks = discoveredLinks.filter(link => {
+        const scopedLinks = discoveredLinks.filter(link => {
+            if (isSourcePage(link, source.url)) {
+                summary.skippedSourceUrl += 1
+                log.debug({ page: link }, 'Skipping the source URL itself')
+                return false
+            }
+
+            if (!isSameSourceBase(link, source.url)) {
+                summary.skippedExternalUrl += 1
+                log.debug(
+                    { page: link, sourceUrl: source.url },
+                    'Skipping URL outside the source base URL'
+                )
+                return false
+            }
+
+            return true
+        })
+
+        log.info(
+            {
+                discovered: discoveredLinks.length,
+                scoped: scopedLinks.length,
+                skippedExternalUrl: summary.skippedExternalUrl,
+                skippedSourceUrl: summary.skippedSourceUrl
+            },
+            'Source URL scope filtering completed'
+        )
+
+        await job.updateProgress({
+            stage: 'source-scope-filtered',
+            percent: 12,
+            discovered: discoveredLinks.length,
+            scoped: scopedLinks.length,
+            skippedExternalUrl: summary.skippedExternalUrl,
+            skippedSourceUrl: summary.skippedSourceUrl
+        })
+
+        const validLinks = scopedLinks.filter(link => {
             if (link.length <= MAX_PAGE_URL_LENGTH) {
                 return true
             }
@@ -113,11 +261,11 @@ export function createSourceScrapeService({
             })
 
             try {
-                const payload = await scraperApiClient.scrapePage(link, includeTags)
-                const text = extractScrapedText(payload)
-                const classification = await groqClassificationService.classify({
-                    text,
-                    sourceUrl: link
+                const { text, classification } = await scrapeAndClassify({
+                    source,
+                    link,
+                    includeTags,
+                    log
                 })
 
                 if (!classification.music) {
@@ -125,7 +273,10 @@ export function createSourceScrapeService({
                     summary.scraped += 1
                     summary.discarded += 1
 
-                    log.info({ page: link }, 'Page classified as non-music and discarded')
+                    log.info(
+                        { page: link, classificationSource: classification.source },
+                        'Page classified as non-music and discarded'
+                    )
                 } else {
                     // Run downstream before marking the page as scraped. If the
                     // downstream call fails the job can retry without losing the
@@ -161,7 +312,10 @@ export function createSourceScrapeService({
                     summary.scraped += 1
                     summary.music += 1
 
-                    log.info({ page: link }, 'Music page forwarded to downstream ingestion')
+                    log.info(
+                        { page: link, classificationSource: classification.source },
+                        'Music page forwarded to downstream ingestion'
+                    )
                 }
 
                 await job.updateProgress({

@@ -2,6 +2,19 @@ import test from 'node:test'
 import assert from 'node:assert'
 import { ClubCheckApiError, createClubCheckApiClient } from '../clients/clubCheckApiClient.js'
 
+function createRateLimiter() {
+    let calls = 0
+    return {
+        get calls() {
+            return calls
+        },
+        schedule(task) {
+            calls += 1
+            return task()
+        }
+    }
+}
+
 function createLogger() {
     const entries = []
     return {
@@ -20,11 +33,13 @@ test('ClubCheckAPI client posts to the private endpoints with the API key', asyn
         }
     }
     const logger = createLogger()
+    const rateLimiter = createRateLimiter()
     const client = createClubCheckApiClient({
         httpClient,
         baseUrl: 'http://clubcheck.test:8080/',
         apiKey: 'secret',
-        logger
+        logger,
+        rateLimiter
     })
 
     const venue = await client.createVenue({ name: 'Venue' })
@@ -49,6 +64,7 @@ test('ClubCheckAPI client posts to the private endpoints with the API key', asyn
     assert.strictEqual(requests[0].headers['X-API-Key'], 'secret')
     assert.strictEqual(requests[0].headers['Content-Type'], 'application/json')
     assert.deepStrictEqual(requests[0].data, { name: 'Venue' })
+    assert.strictEqual(rateLimiter.calls, 4)
 })
 
 test('ClubCheckAPI client wraps and logs request failures', async () => {
@@ -63,7 +79,8 @@ test('ClubCheckAPI client wraps and logs request failures', async () => {
         },
         baseUrl: 'http://clubcheck.test:8080',
         apiKey: 'secret',
-        logger
+        logger,
+        rateLimiter: createRateLimiter()
     })
 
     await assert.rejects(

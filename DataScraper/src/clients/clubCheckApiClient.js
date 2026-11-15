@@ -17,6 +17,7 @@ export function createClubCheckApiClient({
     baseUrl,
     apiKey,
     logger,
+    rateLimiter,
     timeoutMs = 15_000
 }) {
     if (!httpClient) {
@@ -35,13 +36,17 @@ export function createClubCheckApiClient({
         throw new Error('createClubCheckApiClient requires a logger')
     }
 
+    if (!rateLimiter?.schedule) {
+        throw new Error('createClubCheckApiClient requires a rateLimiter')
+    }
+
     const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
 
     async function request(method, path, body) {
         const url = `${normalizedBaseUrl}${path}`
 
         try {
-            const response = await httpClient.request({
+            const response = await rateLimiter.schedule(() => httpClient.request({
                 method,
                 url,
                 data: body,
@@ -51,7 +56,7 @@ export function createClubCheckApiClient({
                     'Content-Type': 'application/json',
                     'X-API-Key': apiKey
                 }
-            })
+            }))
 
             logger.debug(
                 { method, path, status: response.status },

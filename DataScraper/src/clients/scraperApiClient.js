@@ -1,3 +1,4 @@
+import { EMBEDDED_CLASSIFICATION_FORMATS } from '../config/embeddedClassification.js'
 import { normalizeIncludeTags } from '../utils/includeTags.js'
 
 export class ScraperApiError extends Error {
@@ -102,6 +103,7 @@ export function createScraperApiClient({
     logger,
     timeoutMs = 60_000,
     scrapeTimeoutMs = 30_000,
+    classificationTimeoutMs = 180_000,
     maxRetries = 1,
     retryDelayMs = 2_000,
     sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -125,7 +127,7 @@ export function createScraperApiClient({
     const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
     const authorization = buildBasicAuthorization(username, password)
 
-    async function post(path, body) {
+    async function post(path, body, { requestTimeoutMs = timeoutMs } = {}) {
         const url = `${normalizedBaseUrl}/${path.replace(/^\/+/, '')}`
         let attempt = 0
 
@@ -145,7 +147,7 @@ export function createScraperApiClient({
                     method: 'POST',
                     url,
                     data: body,
-                    timeout: timeoutMs,
+                    timeout: Math.max(requestTimeoutMs, timeoutMs),
                     headers: {
                         Accept: 'application/json',
                         'Content-Type': 'application/json',
@@ -232,6 +234,20 @@ export function createScraperApiClient({
             url,
             includeTags: normalizeIncludeTags(includeTags),
             timeout: scrapeTimeoutMs
-        })
+        }),
+        classifyPage: (url, includeTags) => post(
+            '/scrape',
+            {
+                url,
+                includeTags: normalizeIncludeTags(includeTags),
+                formats: EMBEDDED_CLASSIFICATION_FORMATS,
+                timeout: classificationTimeoutMs
+            },
+            {
+                // Firecrawl's embedded LLM often takes ~90 seconds. Keep the
+                // Axios timeout above the Firecrawl body timeout.
+                requestTimeoutMs: classificationTimeoutMs + 15_000
+            }
+        )
     }
 }

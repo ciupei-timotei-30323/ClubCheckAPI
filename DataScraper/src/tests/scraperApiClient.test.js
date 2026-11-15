@@ -56,6 +56,37 @@ test('scraper client attaches Basic Auth and posts the required bodies', async (
     })
 })
 
+test('classifyPage sends Firecrawl embedded-LLM formats and a long timeout', async () => {
+    const requests = []
+    const client = createScraperApiClient({
+        httpClient: {
+            async request(config) {
+                requests.push(config)
+                return { status: 200, data: { data: {} } }
+            }
+        },
+        baseUrl: 'https://scraper.test/v2',
+        username: 'user',
+        password: 'pass',
+        logger: createLogger(),
+        classificationTimeoutMs: 180_000
+    })
+
+    await client.classifyPage('https://www.iabilet.ro/event', ['".epmenurow"'])
+
+    const body = requests[0].data
+    assert.deepStrictEqual(body.includeTags, ['.epmenurow'])
+    assert.strictEqual(body.timeout, 180_000)
+    assert.strictEqual(requests[0].timeout, 195_000)
+    assert.strictEqual(body.formats[0], 'markdown')
+    assert.strictEqual(body.formats[1].type, 'json')
+    assert.strictEqual(body.formats[1].schema.properties.is_music.type, 'boolean')
+    assert.deepStrictEqual(
+        body.formats[1].schema.properties.certainty.enum,
+        ['clear', 'likely', 'unlikely', 'unclear']
+    )
+})
+
 test('scraper client sanitizes quoted selectors and logs the clean payload', async () => {
     const requests = []
     const logger = createLogger()

@@ -43,6 +43,7 @@ const scraperUsername = process.env.SCRAPER_USERNAME || ''
 const scraperPassword = process.env.SCRAPER_PASSWORD || ''
 const scraperTimeoutMs = Number(process.env.NODE_SCRAPER_API_TIMEOUT_MS || 60_000)
 const firecrawlTimeoutMs = Number(process.env.NODE_FIRECRAWL_TIMEOUT_MS || 30_000)
+const firecrawlLlmTimeoutMs = Number(process.env.NODE_FIRECRAWL_LLM_TIMEOUT_MS || 180_000)
 const scraperMaxRetries = Number(process.env.NODE_SCRAPER_API_MAX_RETRIES || 1)
 const scraperRetryDelayMs = Number(process.env.NODE_SCRAPER_API_RETRY_DELAY_MS || 2_000)
 const scraperConcurrency = Number(process.env.NODE_SCRAPER_CONCURRENCY || 5)
@@ -55,6 +56,7 @@ const geminiApiKey = process.env.GEMINI_API_KEY || ''
 const geminiModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen'
 const clubCheckApiUrl = process.env.NODE_CLUBCHECK_API_URL || ''
 const clubCheckApiKey = process.env.NODE_CLUBCHECK_API_KEY || process.env.NODE_API_KEY || ''
+const clubCheckPostIntervalMs = Number(process.env.NODE_CLUBCHECK_POST_INTERVAL_MS || 60_000)
 const musicBrainzApiUrl = process.env.MUSICBRAINZ_API_URL || 'https://musicbrainz.org/ws/2'
 const musicBrainzUserAgent = process.env.MUSICBRAINZ_USER_AGENT || 'ClubCheckAPI-DataScraper/1.0.0'
 const musicBrainzMinIntervalMs = Number(process.env.MUSICBRAINZ_MIN_INTERVAL_MS || 1_100)
@@ -98,11 +100,16 @@ if (geminiApiKey) {
             musicBrainzClient,
             logger: app.log
         })
+        const clubCheckPostRateLimiter = createRateLimiter({
+            minIntervalMs: clubCheckPostIntervalMs,
+            logger: app.log
+        })
         const clubCheckApiClient = createClubCheckApiClient({
             httpClient: axios,
             baseUrl: clubCheckApiUrl,
             apiKey: clubCheckApiKey,
-            logger: app.log
+            logger: app.log,
+            rateLimiter: clubCheckPostRateLimiter
         })
         const eventIngestionService = createEventIngestionService({
             clubCheckApiClient,
@@ -125,6 +132,7 @@ if (geminiApiKey) {
         app.log.info(
             {
                 clubCheckApiUrl,
+                clubCheckPostIntervalMs,
                 musicBrainzApiUrl,
                 musicBrainzMinIntervalMs
             },
@@ -156,6 +164,7 @@ if (scraperApiUrl && scraperUsername && scraperPassword && groqApiKey) {
         logger: app.log,
         timeoutMs: scraperTimeoutMs,
         scrapeTimeoutMs: firecrawlTimeoutMs,
+        classificationTimeoutMs: firecrawlLlmTimeoutMs,
         maxRetries: scraperMaxRetries,
         retryDelayMs: scraperRetryDelayMs
     })
@@ -203,6 +212,7 @@ if (scraperApiUrl && scraperUsername && scraperPassword && groqApiKey) {
             concurrency: scraperConcurrency,
             timeoutMs: scraperTimeoutMs,
             firecrawlTimeoutMs,
+            firecrawlLlmTimeoutMs,
             maxRetries: scraperMaxRetries,
             retryDelayMs: scraperRetryDelayMs,
             groqModel,

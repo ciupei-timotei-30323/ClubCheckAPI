@@ -25,7 +25,8 @@ export async function scrapeService({ pool, scrapeQueue, apiQueue, logger }) {
 
     const [sourcesResult, apiResult] = await Promise.all([
         pool.query(
-            `SELECT id, url, sitemap_available, tags_to_be_scraped AS "includeTags"
+            `SELECT id, url, sitemap_available, has_non_music_events,
+                    tags_to_be_scraped AS "includeTags"
              FROM sources
              WHERE method ILIKE '%scrape%'`
         ),
@@ -38,6 +39,8 @@ export async function scrapeService({ pool, scrapeQueue, apiQueue, logger }) {
             id: row.id,
             url: row.url,
             sitemapAvailable: row.sitemap_available === true,
+            // null means the source has not been configured yet; classify to be safe.
+            hasNonMusicEvents: row.has_non_music_events !== false,
             includeTags: parseIncludeTags(row.includeTags)
         }))
 

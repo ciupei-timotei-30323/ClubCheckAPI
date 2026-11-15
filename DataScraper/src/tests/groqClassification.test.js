@@ -130,6 +130,51 @@ test('Groq classification releases its token reservation when the request fails'
     assert.strictEqual(tokenLimiter.reservations[0].released, true)
 })
 
+test('Groq classification waits for Retry-After and retries 429 responses', async () => {
+    let calls = 0
+    const sleeps = []
+    const groqClient = {
+        chat: {
+            completions: {
+                async create() {
+                    calls += 1
+
+                    if (calls === 1) {
+                        const error = new Error('rate limited')
+                        error.status = 429
+                        error.headers = new Headers({ 'retry-after': '2' })
+                        throw error
+                    }
+
+                    return {
+                        choices: [{
+                            message: {
+                                content: '{"results":[{"id":1,"music":true}]}'
+                            }
+                        }]
+                    }
+                }
+            }
+        }
+    }
+
+    const service = createGroqClassificationService({
+        groqClient,
+        logger: createLogger(),
+        tokensPerMinuteLimiter: createTokenLimiter(),
+        sleep: async ms => sleeps.push(ms)
+    })
+
+    const result = await service.classify({
+        text: 'A live concert',
+        sourceUrl: 'https://source.example/event'
+    })
+
+    assert.strictEqual(result.music, true)
+    assert.strictEqual(calls, 2)
+    assert.deepStrictEqual(sleeps, [2_000])
+})
+
 test('Groq classification accepts fenced JSON', async () => {
     const service = createGroqClassificationService({
         groqClient: createGroqClient('```json\n{"results":[{"id":1,"music":false}]}\n```'),
