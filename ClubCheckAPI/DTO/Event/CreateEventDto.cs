@@ -16,6 +16,8 @@ public record CreateEventDto()
     public DateTime? EndDate { get; set; }
     [MaxLength(800)]
     public string? Description { get; set; }
+    [MaxLength(400)]
+    public string? Organizer { get; set; }
     public Price? Price { get; set; }
     public Uri? TicketUrl { get; set; }
     public Uri? AnnouncementUrl { get; set; }

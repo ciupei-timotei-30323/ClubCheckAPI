@@ -19,6 +19,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         Name = e.Name,
         StartDate = e.StartDate,
         Description = e.Description,
+        Organizer = e.Organizer,
         AnnouncementUrl = e.AnnouncementUrl,
         TicketUrl = e.TicketUrl,
         PosterUrl = e.PosterUrl,
@@ -45,6 +46,10 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
         if (!string.IsNullOrWhiteSpace(q.Name))
             query = query.Where(e => EF.Functions.ILike(e.Name, $"%{q.Name}%"));
+
+        if (!string.IsNullOrWhiteSpace(q.Organizer))
+            query = query.Where(e => e.Organizer != null &&
+                                     EF.Functions.ILike(e.Organizer, $"%{q.Organizer}%"));
 
         if (!string.IsNullOrWhiteSpace(q.City))
             query = query.Where(e => e.Venue.Address != null &&
@@ -119,6 +124,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             IsActive = eventDto.IsActive,
             EndDate = eventDto.EndDate,
             Description = eventDto.Description,
+            Organizer = eventDto.Organizer,
             Price = eventDto.Price,
             TicketUrl = eventDto.TicketUrl,
             PosterUrl = eventDto.PosterUrl,

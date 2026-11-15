@@ -9,6 +9,7 @@ public record QueryEventsDto()
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public string? Name { get; set; }
+    public string? Organizer { get; set; }
     public string? City { get; set; }
     public Price?  Price { get; set; }
     public string? VenueName { get; set; }
