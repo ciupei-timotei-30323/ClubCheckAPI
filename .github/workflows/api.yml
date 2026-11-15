@@ -49,6 +49,8 @@ jobs:
         uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: "10.0.401"
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.tool_cache }}/dotnet
       
       # Runs IntegrationTests
       - name: Run Tests
@@ -62,6 +64,8 @@ jobs:
         with:
           cosign-release: 'v2.2.4'
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
       # https://github.com/docker/setup-buildx-action
@@ -94,6 +98,7 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
+          platforms: linux/amd64
           file: ClubCheckAPI/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
