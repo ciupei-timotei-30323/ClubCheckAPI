@@ -1,86 +1,15 @@
 import { Worker } from 'bullmq'
-import { EnviromentVariablesNotFoundException } from '../exceptions/enviromentVariablesNotFoundException.js'
-
-const DEFAULT_TIMEOUT_MS = 30_000
 
 /**
- * Builds the request sent to the external scraping API.
- *
- * The API url comes from the environment and may either contain a `{url}`
- * placeholder or accept the target as a `url` query parameter:
- *   https://scraper.example.com/extract?target={url}
- *   https://scraper.example.com/extract
- *
- * Override this via `createScrapeWorker({ buildRequest })` when the provider
- * uses a different request shape.
- */
-export function buildScrapeRequest({
-    scraperApiUrl,
-    targetUrl,
-    scrapingApiKey,
-    apiKeyHeader = 'x-api-key',
-    timeoutMs = DEFAULT_TIMEOUT_MS
-}) {
-    const encodedTarget = encodeURIComponent(targetUrl)
-    const endpoint = scraperApiUrl.includes('{url}')
-        ? scraperApiUrl.replaceAll('{url}', encodedTarget)
-        : `${scraperApiUrl}${scraperApiUrl.includes('?') ? '&' : '?'}url=${encodedTarget}`
-
-    const headers = {
-        accept: 'text/plain, text/html;q=0.9, application/json;q=0.8, */*;q=0.7'
-    }
-
-    if (scrapingApiKey) {
-        headers[apiKeyHeader] = scrapingApiKey
-    }
-
-    return {
-        method: 'GET',
-        url: endpoint,
-        responseType: 'text',
-        timeout: timeoutMs,
-        headers
-    }
-}
-
-function extractText(data) {
-    if (typeof data === 'string') {
-        return data
-    }
-
-    if (data && typeof data.text === 'string') {
-        return data.text
-    }
-
-    if (data && typeof data.content === 'string') {
-        return data.content
-    }
-
-    return ''
-}
-
-/**
- * Creates the BullMQ processor for a single scraping job.
- *
- * Dependencies are injected so this function is easy to test without a real
- * queue, HTTP API or logger.
+ * Creates the BullMQ processor for one source-level scraping job.
  */
 export function createScrapeProcessor({
-    scraperApiUrl,
-    scrapingApiKey,
-    apiKeyHeader,
-    logger,
-    httpClient,
-    buildRequest = buildScrapeRequest,
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    onScraped
+    sourceScrapeService,
+    onMusicEvent,
+    logger
 }) {
-    if (!scraperApiUrl) {
-        throw new EnviromentVariablesNotFoundException()
-    }
-
-    if (!httpClient) {
-        throw new Error('createScrapeProcessor requires an httpClient')
+    if (!sourceScrapeService?.processSource) {
+        throw new Error('createScrapeProcessor requires a source scrape service')
     }
 
     if (!logger) {
@@ -88,98 +17,89 @@ export function createScrapeProcessor({
     }
 
     return async function processScrapeJob(job) {
-        const targetUrl = job.data?.url
+        const source = job.data?.source
         const log = logger.child({
             jobId: job.id,
             queue: job.queueName,
             jobName: job.name,
-            url: targetUrl
+            sourceId: source?.id,
+            url: source?.url
         })
 
-        if (!targetUrl) {
-            throw new Error(`Job ${job.id} is missing data.url`)
+        if (!source?.id || !source?.url) {
+            throw new Error(`Job ${job.id} is missing data.source.id or data.source.url`)
         }
 
-        log.info({ progress: 0 }, 'Scrape job started')
+        log.info({ progress: 0 }, 'Scrape source job started')
         await job.updateProgress({ stage: 'started', percent: 0 })
-        await job.log(`Scraping ${targetUrl}`)
+        await job.log(`Processing source ${source.url}`)
 
         try {
-            const request = buildRequest({
-                scraperApiUrl,
-                targetUrl,
-                scrapingApiKey,
-                apiKeyHeader,
-                timeoutMs
+            const summary = await sourceScrapeService.processSource({
+                source,
+                job,
+                onMusicEvent
             })
 
-            log.debug({ progress: 25, endpoint: request.url }, 'Calling external scraping API')
-            await job.updateProgress({ stage: 'fetching', percent: 25 })
+            log.info(
+                {
+                    discovered: summary.discovered,
+                    alreadyKnown: summary.alreadyKnown,
+                    scraped: summary.scraped,
+                    music: summary.music,
+                    discarded: summary.discarded
+                },
+                'Scrape source job completed'
+            )
 
-            const response = await httpClient.request(request)
-            const text = extractText(response.data)
-
-            if (!text.trim()) {
-                throw new Error(`Scraping API returned an empty body for ${targetUrl}`)
-            }
-
-            log.info({ progress: 80, characters: text.length }, 'Scraped text received')
-            await job.updateProgress({ stage: 'received', percent: 80 })
-
-            const result = {
-                url: targetUrl,
-                text,
-                characters: text.length,
-                scrapedAt: new Date().toISOString()
-            }
-
-            if (onScraped) {
-                log.debug({ progress: 90 }, 'Post-processing scraped text')
-                await job.updateProgress({ stage: 'post-processing', percent: 90 })
-                const enrichment = await onScraped({ ...result, job })
-
-                if (enrichment !== undefined) {
-                    result.enrichment = enrichment
-                }
-            }
-
-            await job.updateProgress({ stage: 'completed', percent: 100 })
-            log.info({ progress: 100, characters: result.characters }, 'Scrape job completed')
-
-            return result
+            return { source, summary }
         } catch (error) {
-            log.error({ err: error, progress: job.progress }, 'Scrape job failed')
-            await job.log(`Scrape failed for ${targetUrl}: ${error.message}`)
+            log.error({ err: error, progress: job.progress }, 'Scrape source job failed')
+            await job.log(`Scrape failed for ${source.url}: ${error.message}`)
             throw error
         }
     }
 }
 
 /**
- * Attaches structured logging to the worker lifecycle events. Keeping this
- * separate from the processor makes the job itself and the queue lifecycle
- * observable independently.
+ * Attaches structured logging to the worker lifecycle events.
  */
 export function attachWorkerLogging(worker, logger) {
     worker.on('active', (job) => {
-        logger.debug({ jobId: job.id, url: job.data?.url }, 'Scrape job active')
+        logger.debug(
+            { jobId: job.id, sourceId: job.data?.source?.id, url: job.data?.source?.url },
+            'Scrape source job active'
+        )
     })
 
     worker.on('progress', (job, progress) => {
-        logger.info({ jobId: job.id, url: job.data?.url, progress }, 'Scrape job progress')
+        logger.info(
+            { jobId: job.id, sourceId: job.data?.source?.id, progress },
+            'Scrape source job progress'
+        )
     })
 
     worker.on('completed', (job, result) => {
         logger.info(
-            { jobId: job.id, url: job.data?.url, characters: result?.characters },
-            'Scrape job completed'
+            {
+                jobId: job.id,
+                sourceId: job.data?.source?.id,
+                scraped: result?.summary?.scraped,
+                music: result?.summary?.music
+            },
+            'Scrape source job completed'
         )
     })
 
     worker.on('failed', (job, error) => {
         logger.error(
-            { jobId: job?.id, url: job?.data?.url, err: error },
-            'Scrape job failed'
+            {
+                jobId: job?.id,
+                sourceId: job?.data?.source?.id,
+                url: job?.data?.source?.url,
+                err: error
+            },
+            'Scrape source job failed'
         )
     })
 
@@ -195,24 +115,15 @@ export function attachWorkerLogging(worker, logger) {
 }
 
 /**
- * Creates the worker that consumes `scrape` jobs.
- *
- * All dependencies (queue connection, queue name, API url, HTTP client and
- * logger) are injected by the composition root instead of being read from
- * `process.env` here.
+ * Creates the worker that consumes source-level scrape jobs.
  */
 export function createScrapeWorker({
     connection,
     queueName,
-    scraperApiUrl,
-    scrapingApiKey,
-    apiKeyHeader,
+    sourceScrapeService,
+    onMusicEvent,
     logger,
-    httpClient,
     concurrency = 5,
-    buildRequest,
-    timeoutMs,
-    onScraped,
     workerOptions = {}
 }) {
     if (!connection) {
@@ -224,14 +135,9 @@ export function createScrapeWorker({
     }
 
     const processor = createScrapeProcessor({
-        scraperApiUrl,
-        scrapingApiKey,
-        apiKeyHeader,
-        logger,
-        httpClient,
-        buildRequest,
-        timeoutMs,
-        onScraped
+        sourceScrapeService,
+        onMusicEvent,
+        logger
     })
 
     const worker = new Worker(queueName, processor, {

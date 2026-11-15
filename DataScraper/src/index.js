@@ -1,16 +1,22 @@
 import axios from 'axios'
 import {GoogleGenAI} from '@google/genai'
+import {Groq} from 'groq-sdk'
 import {getLoggerConfig} from './middleware/logger.js'
 import {buildApp} from "./app.js";
 import {createScrapeWorker} from "./workers/scrapeWorker.js";
 import {SCRAPE_QUEUE_NAME} from "./config/queue.js";
 import {createStructuredDataExtractor} from "./inferences/structuredDataInference.js";
+import {createGroqClassificationService} from "./inferences/groqClassification.js";
 import {createScrapeIngestionPipeline} from "./services/scrapeIngestionPipeline.js";
 import {createEventIngestionService} from "./services/eventIngestionService.js";
 import {createArtistFingerprintService} from "./services/artistFingerprintService.js";
+import {createSourceScrapeService} from "./services/sourceScrapeService.js";
 import {createClubCheckApiClient} from "./clients/clubCheckApiClient.js";
 import {createMusicBrainzClient} from "./clients/musicBrainzClient.js";
+import {createScraperApiClient} from "./clients/scraperApiClient.js";
+import {createPageRepository} from "./repositories/pageRepository.js";
 import {createRateLimiter} from "./utils/rateLimiter.js";
+import {createTokensPerMinuteLimiter} from "./utils/tokensPerMinuteLimiter.js";
 
 // This  block of code doesn't matter for containers
 //----------------------------------------------------------------------------------------------------
@@ -24,17 +30,27 @@ catch (e) {                                                                     
 // ----------------------------------------------------------------------------------------------------
 
 
-// const fastify = Fastify({logger: loggerConfig})
 const enviroment = process.env.NODE_ENV || 'production'
 const loggerConfig = getLoggerConfig({enviroment})
-const hostname = process.env.NODE_HOST|| '0.0.0.0';
-const port =  process.env.NODE_PORT || 3000;
+const hostname = process.env.NODE_HOST || '0.0.0.0';
+const port = process.env.NODE_PORT || 3000;
 const serverKey = process.env.NODE_API_KEY || ''
 const connectionString = process.env.NODE_DATABASE_URL_POOLED || ''
+const queueConnectionString = process.env.NODE_DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || connectionString
+
 const scraperApiUrl = process.env.NODE_SCRAPER_API_URL || ''
-const scrapingApiKey = process.env.SCRAPING_API_KEY || ''
-const scraperTimeoutMs = Number(process.env.NODE_SCRAPER_API_TIMEOUT_MS || 30_000)
+const scraperUsername = process.env.SCRAPER_USERNAME || ''
+const scraperPassword = process.env.SCRAPER_PASSWORD || ''
+const scraperTimeoutMs = Number(process.env.NODE_SCRAPER_API_TIMEOUT_MS || 60_000)
+const firecrawlTimeoutMs = Number(process.env.NODE_FIRECRAWL_TIMEOUT_MS || 30_000)
+const scraperMaxRetries = Number(process.env.NODE_SCRAPER_API_MAX_RETRIES || 1)
+const scraperRetryDelayMs = Number(process.env.NODE_SCRAPER_API_RETRY_DELAY_MS || 2_000)
 const scraperConcurrency = Number(process.env.NODE_SCRAPER_CONCURRENCY || 5)
+
+const groqApiKey = process.env.GROQ_API_KEY || ''
+const groqModel = process.env.GROQ_MODEL || 'openai/gpt-oss-20b'
+const groqTpmLimit = Number(process.env.GROQ_TPM_LIMIT || 8_000)
+
 const geminiApiKey = process.env.GEMINI_API_KEY || ''
 const geminiModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen'
 const clubCheckApiUrl = process.env.NODE_CLUBCHECK_API_URL || ''
@@ -44,125 +60,137 @@ const musicBrainzUserAgent = process.env.MUSICBRAINZ_USER_AGENT || 'ClubCheckAPI
 const musicBrainzMinIntervalMs = Number(process.env.MUSICBRAINZ_MIN_INTERVAL_MS || 1_100)
 const musicBrainzIncludes = process.env.MUSICBRAINZ_INCLUDES || undefined
 
-
-// fastify.route({
-//     method: 'GET',
-//     url: '/scrape',
-//     schema: {
-//         response: {
-//             200: {}
-//         }
-//     },
-//     preHandler: async function(req, res) {
-//         const clientKey = req.headers['x-api-key'];
-//         const serverKey = process.env.NODE_API_KEY;
-//
-//         if (!serverKey || !clientKey || clientKey !== serverKey) {
-//             req.log.warn('invalid key')
-//             throw NotFound();
-//         }
-//     },
-//     handler: function(req, res) {
-//         res.log.info('Scraper endpoint called successfully')
-//         res.send({hello: 'worlds'});
-//     }
-// })
-
 // Build the app
-const app = await buildApp({logger: loggerConfig, apiKey: serverKey, connString: connectionString})
+const app = await buildApp({
+    logger: loggerConfig,
+    apiKey: serverKey,
+    connString: connectionString,
+    queueConnection: queueConnectionString
+})
 
-// Run the worker in the same process as the API. The worker and the queue
-// share the same BullMQ connection configuration; both are injected so the
-// worker module never reads process.env directly.
-if (scraperApiUrl) {
-    let onScraped
+// Downstream handler invoked only for pages Groq classified as music-related.
+let onMusicEvent
 
-    if (geminiApiKey) {
-        const ai = new GoogleGenAI({apiKey: geminiApiKey})
-        const extractor = createStructuredDataExtractor({
-            ai,
-            model: geminiModel,
+if (geminiApiKey) {
+    const ai = new GoogleGenAI({apiKey: geminiApiKey})
+    const extractor = createStructuredDataExtractor({
+        ai,
+        model: geminiModel,
+        logger: app.log
+    })
+
+    app.log.info({model: geminiModel}, 'Gemini structured-data extraction enabled')
+
+    if (clubCheckApiUrl && clubCheckApiKey) {
+        const musicBrainzRateLimiter = createRateLimiter({
+            minIntervalMs: musicBrainzMinIntervalMs,
+            logger: app.log
+        })
+        const musicBrainzClient = createMusicBrainzClient({
+            httpClient: axios,
+            baseUrl: musicBrainzApiUrl,
+            userAgent: musicBrainzUserAgent,
+            rateLimiter: musicBrainzRateLimiter,
+            logger: app.log,
+            includes: musicBrainzIncludes
+        })
+        const artistFingerprintService = createArtistFingerprintService({
+            musicBrainzClient,
+            logger: app.log
+        })
+        const clubCheckApiClient = createClubCheckApiClient({
+            httpClient: axios,
+            baseUrl: clubCheckApiUrl,
+            apiKey: clubCheckApiKey,
+            logger: app.log
+        })
+        const eventIngestionService = createEventIngestionService({
+            clubCheckApiClient,
+            artistFingerprintService,
             logger: app.log
         })
 
-        app.log.info({model: geminiModel}, 'Gemini structured-data extraction enabled')
+        onMusicEvent = createScrapeIngestionPipeline({
+            structuredDataExtractor: extractor,
+            eventIngestionService,
+            logger: app.log
+        })
 
-        if (clubCheckApiUrl && clubCheckApiKey) {
-            const musicBrainzRateLimiter = createRateLimiter({
-                minIntervalMs: musicBrainzMinIntervalMs,
-                logger: app.log
-            })
-            const musicBrainzClient = createMusicBrainzClient({
-                httpClient: axios,
-                baseUrl: musicBrainzApiUrl,
-                userAgent: musicBrainzUserAgent,
-                rateLimiter: musicBrainzRateLimiter,
-                logger: app.log,
-                includes: musicBrainzIncludes
-            })
-            const artistFingerprintService = createArtistFingerprintService({
-                musicBrainzClient,
-                logger: app.log
-            })
-            const clubCheckApiClient = createClubCheckApiClient({
-                httpClient: axios,
-                baseUrl: clubCheckApiUrl,
-                apiKey: clubCheckApiKey,
-                logger: app.log
-            })
-            const eventIngestionService = createEventIngestionService({
-                clubCheckApiClient,
-                artistFingerprintService,
-                logger: app.log
-            })
-
-            onScraped = createScrapeIngestionPipeline({
-                structuredDataExtractor: extractor,
-                eventIngestionService,
-                logger: app.log
-            })
-
-            if (!process.env.MUSICBRAINZ_USER_AGENT) {
-                app.log.warn(
-                    'MUSICBRAINZ_USER_AGENT is not set; configure a valid app name and contact email'
-                )
-            }
-
-            app.log.info(
-                {
-                    clubCheckApiUrl,
-                    musicBrainzApiUrl,
-                    musicBrainzMinIntervalMs
-                },
-                'ClubCheckAPI ingestion pipeline enabled'
-            )
-        } else {
+        if (!process.env.MUSICBRAINZ_USER_AGENT) {
             app.log.warn(
-                'NODE_CLUBCHECK_API_URL or NODE_CLUBCHECK_API_KEY is not set; only structured extraction will run'
+                'MUSICBRAINZ_USER_AGENT is not set; configure a valid app name and contact email'
             )
-            onScraped = async ({url, text, job}) => {
-                await job.updateProgress({stage: 'inferring', percent: 92})
-                const inference = await extractor.extract({text, sourceUrl: url})
-                await job.updateProgress({stage: 'inferred', percent: 98})
-                return inference
-            }
         }
+
+        app.log.info(
+            {
+                clubCheckApiUrl,
+                musicBrainzApiUrl,
+                musicBrainzMinIntervalMs
+            },
+            'ClubCheckAPI ingestion pipeline enabled'
+        )
     } else {
-        app.log.warn('GEMINI_API_KEY is not set; scraped text will not be sent to Gemini')
+        app.log.warn(
+            'NODE_CLUBCHECK_API_URL or NODE_CLUBCHECK_API_KEY is not set; only structured extraction will run'
+        )
+        onMusicEvent = async ({url, text, job, onProgress}) => {
+            const updateProgress = onProgress ?? (progress => job.updateProgress(progress))
+            await updateProgress({stage: 'inferring', percent: 92})
+            const inference = await extractor.extract({text, sourceUrl: url})
+            await updateProgress({stage: 'inferred', percent: 99})
+            return inference
+        }
     }
+} else {
+    app.log.warn('GEMINI_API_KEY is not set; music pages will not be sent to Gemini')
+}
+
+// Source scraping worker: discovery -> dedupe -> /scrape -> Groq classification.
+if (scraperApiUrl && scraperUsername && scraperPassword && groqApiKey) {
+    const scraperApiClient = createScraperApiClient({
+        httpClient: axios,
+        baseUrl: scraperApiUrl,
+        username: scraperUsername,
+        password: scraperPassword,
+        logger: app.log,
+        timeoutMs: scraperTimeoutMs,
+        scrapeTimeoutMs: firecrawlTimeoutMs,
+        maxRetries: scraperMaxRetries,
+        retryDelayMs: scraperRetryDelayMs
+    })
+    const groqClient = new Groq({apiKey: groqApiKey})
+    const groqTokensPerMinuteLimiter = createTokensPerMinuteLimiter({
+        limit: groqTpmLimit,
+        windowMs: 60_000,
+        logger: app.log
+    })
+    const groqClassificationService = createGroqClassificationService({
+        groqClient,
+        logger: app.log,
+        tokensPerMinuteLimiter: groqTokensPerMinuteLimiter,
+        model: groqModel
+    })
+    const pageRepository = createPageRepository({
+        pool: app.dbPool,
+        logger: app.log
+    })
+    const sourceScrapeService = createSourceScrapeService({
+        scraperApiClient,
+        groqClassificationService,
+        pageRepository,
+        logger: app.log
+    })
 
     const scrapeWorker = createScrapeWorker({
-        connection: connectionString
-            ? {connectionString, migrate: true}
+        connection: queueConnectionString
+            ? {connectionString: queueConnectionString, migrate: true}
             : {migrate: true},
         queueName: SCRAPE_QUEUE_NAME,
-        scraperApiUrl,
-        scrapingApiKey,
+        sourceScrapeService,
+        onMusicEvent,
         logger: app.log,
-        httpClient: axios,
-        concurrency: scraperConcurrency,
-        timeoutMs: scraperTimeoutMs,
-        onScraped
+        concurrency: scraperConcurrency
     })
 
     app.addHook('onClose', async () => {
@@ -170,20 +198,30 @@ if (scraperApiUrl) {
         await scrapeWorker.close()
     })
 
-    if (!scrapingApiKey) {
-        app.log.warn('SCRAPING_API_KEY is not set; scraping API requests will be sent without a key')
-    }
-
     app.log.info(
         {
             concurrency: scraperConcurrency,
             timeoutMs: scraperTimeoutMs,
-            hasApiKey: Boolean(scrapingApiKey)
+            firecrawlTimeoutMs,
+            maxRetries: scraperMaxRetries,
+            retryDelayMs: scraperRetryDelayMs,
+            groqModel,
+            groqTpmLimit
         },
-        'Scrape worker started'
+        'Source scrape worker started'
     )
 } else {
-    app.log.warn('NODE_SCRAPER_API_URL is not set; scrape worker will not start')
+    const missing = [
+        !scraperApiUrl && 'NODE_SCRAPER_API_URL',
+        !scraperUsername && 'SCRAPER_USERNAME',
+        !scraperPassword && 'SCRAPER_PASSWORD',
+        !groqApiKey && 'GROQ_API_KEY'
+    ].filter(Boolean)
+
+    app.log.warn(
+        {missing},
+        'Scrape worker not started because required configuration is missing'
+    )
 }
 
 // Run the server!

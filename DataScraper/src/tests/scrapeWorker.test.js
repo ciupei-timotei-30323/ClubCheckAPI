@@ -1,26 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert'
-import {
-    buildScrapeRequest,
-    createScrapeProcessor
-} from '../workers/scrapeWorker.js'
+import { createScrapeProcessor } from '../workers/scrapeWorker.js'
 
 function createLogger() {
     const entries = []
     const logger = {
         entries,
-        child(context) {
+        child() {
             return {
-                ...logger,
-                context,
                 info: (data, message) => entries.push(['info', message, data]),
                 debug: (data, message) => entries.push(['debug', message, data]),
                 error: (data, message) => entries.push(['error', message, data])
             }
-        },
-        info: (data, message) => entries.push(['info', message, data]),
-        debug: (data, message) => entries.push(['debug', message, data]),
-        error: (data, message) => entries.push(['error', message, data])
+        }
     }
 
     return logger
@@ -45,112 +37,69 @@ function createJob(data) {
     }
 }
 
-test('buildScrapeRequest replaces the {url} placeholder', () => {
-    const targetUrl = 'https://example.com/a page'
-    const request = buildScrapeRequest({
-        scraperApiUrl: 'https://scraper.test/extract?target={url}',
-        targetUrl
-    })
+const source = {
+    id: 1,
+    url: 'https://source.example',
+    sitemapAvailable: true,
+    includeTags: ['h1']
+}
 
-    assert.strictEqual(
-        request.url,
-        `https://scraper.test/extract?target=${encodeURIComponent(targetUrl)}`
-    )
-})
-
-test('buildScrapeRequest appends the url query parameter when there is no placeholder', () => {
-    const request = buildScrapeRequest({
-        scraperApiUrl: 'https://scraper.test/extract',
-        targetUrl: 'https://example.com'
-    })
-
-    assert.strictEqual(
-        request.url,
-        `https://scraper.test/extract?url=${encodeURIComponent('https://example.com')}`
-    )
-})
-
-test('buildScrapeRequest sends the injected API key in the configured header', () => {
-    const request = buildScrapeRequest({
-        scraperApiUrl: 'https://scraper.test/extract',
-        targetUrl: 'https://example.com',
-        scrapingApiKey: 'secret-key',
-        apiKeyHeader: 'authorization'
-    })
-
-    assert.strictEqual(request.headers.authorization, 'secret-key')
-})
-
-test('scrape processor calls the API, reports progress and returns the text', async () => {
-    const logger = createLogger()
-    const job = createJob({ url: 'https://example.com' })
-    let receivedRequest
-
+test('scrape processor delegates the whole source to the source scrape service', async () => {
+    const calls = []
+    const onMusicEvent = async () => {}
     const processor = createScrapeProcessor({
-        scraperApiUrl: 'https://scraper.test/extract',
-        scrapingApiKey: 'secret-key',
-        logger,
-        httpClient: {
-            async request(request) {
-                receivedRequest = request
-                return { data: 'scraped text' }
+        logger: createLogger(),
+        onMusicEvent,
+        sourceScrapeService: {
+            async processSource(args) {
+                calls.push(args)
+                return {
+                    sourceId: 1,
+                    sourceUrl: source.url,
+                    discovered: 3,
+                    alreadyKnown: 1,
+                    scraped: 2,
+                    music: 1,
+                    discarded: 1
+                }
             }
         }
     })
 
+    const job = createJob({ source })
     const result = await processor(job)
 
-    assert.strictEqual(receivedRequest.method, 'GET')
-    assert.strictEqual(receivedRequest.headers['x-api-key'], 'secret-key')
-    assert.match(receivedRequest.url, /url=https%3A%2F%2Fexample\.com/)
-    assert.strictEqual(result.text, 'scraped text')
-    assert.strictEqual(result.characters, 12)
-    assert.deepStrictEqual(
-        job.progressUpdates.map(update => update.stage),
-        ['started', 'fetching', 'received', 'completed']
-    )
-    assert.ok(job.logs.some(message => message.includes('Scraping https://example.com')))
+    assert.strictEqual(calls.length, 1)
+    assert.deepStrictEqual(calls[0].source, source)
+    assert.strictEqual(calls[0].job, job)
+    assert.strictEqual(calls[0].onMusicEvent, onMusicEvent)
+    assert.strictEqual(result.summary.discovered, 3)
+    assert.strictEqual(result.source, source)
+    assert.deepStrictEqual(job.progressUpdates, [{ stage: 'started', percent: 0 }])
+    assert.ok(job.logs.some(message => message.includes(source.url)))
 })
 
-test('scrape processor includes post-processing enrichment in the result', async () => {
-    const job = createJob({ url: 'https://example.com' })
+test('scrape processor rejects jobs without a source', async () => {
     const processor = createScrapeProcessor({
-        scraperApiUrl: 'https://scraper.test/extract',
         logger: createLogger(),
-        httpClient: { request: async () => ({ data: 'scraped text' }) },
-        onScraped: async ({ url, text }) => ({ structured: { url, text } })
+        sourceScrapeService: { processSource: async () => ({}) }
     })
 
-    const result = await processor(job)
-
-    assert.deepStrictEqual(result.enrichment, {
-        structured: { url: 'https://example.com', text: 'scraped text' }
-    })
-    assert.deepStrictEqual(
-        job.progressUpdates.map(update => update.stage),
-        ['started', 'fetching', 'received', 'post-processing', 'completed']
-    )
+    await assert.rejects(() => processor(createJob({})), /missing data\.source/)
 })
 
-test('scrape processor rejects jobs without a target url', async () => {
+test('scrape processor propagates source processing failures', async () => {
     const processor = createScrapeProcessor({
-        scraperApiUrl: 'https://scraper.test/extract',
         logger: createLogger(),
-        httpClient: { request: async () => ({ data: 'unused' }) }
-    })
-
-    await assert.rejects(() => processor(createJob({})), /missing data\.url/)
-})
-
-test('scrape processor rejects an empty scraping API response', async () => {
-    const processor = createScrapeProcessor({
-        scraperApiUrl: 'https://scraper.test/extract',
-        logger: createLogger(),
-        httpClient: { request: async () => ({ data: '   ' }) }
+        sourceScrapeService: {
+            async processSource() {
+                throw new Error('classification failed')
+            }
+        }
     })
 
     await assert.rejects(
-        () => processor(createJob({ url: 'https://example.com' })),
-        /empty body/
+        () => processor(createJob({ source })),
+        /classification failed/
     )
 })

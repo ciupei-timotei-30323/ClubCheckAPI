@@ -1,46 +1,72 @@
 import { API_JOB_NAME, SCRAPE_JOB_NAME } from '../config/queue.js'
+import { normalizeIncludeTags } from '../utils/includeTags.js'
 
-export async function scrapeService({ pool, queue, logger }) {
+/**
+ * `tags_to_be_scraped` is a varchar column. It may contain a JSON array,
+ * double-encoded JSON, or a comma-separated list. Normalisation also strips
+ * stray wrapping quotes from each selector.
+ */
+export function parseIncludeTags(value) {
+    return normalizeIncludeTags(value)
+}
+
+export async function scrapeService({ pool, scrapeQueue, apiQueue, logger }) {
     if (!pool) {
         throw new Error('scrapeService requires a database pool')
     }
 
-    if (!queue) {
-        throw new Error('scrapeService requires a queue')
+    if (!scrapeQueue || !apiQueue) {
+        throw new Error('scrapeService requires scrapeQueue and apiQueue')
     }
 
     if (!logger) {
         throw new Error('scrapeService requires a logger')
     }
 
-    // Querying for urls
     const [sourcesResult, apiResult] = await Promise.all([
-        pool.query("SELECT url FROM sources WHERE method LIKE '%scrape%'"),
-        pool.query("SELECT api_url FROM sources WHERE method LIKE '%api%'")
+        pool.query(
+            `SELECT id, url, sitemap_available, tags_to_be_scraped AS "includeTags"
+             FROM sources
+             WHERE method ILIKE '%scrape%'`
+        ),
+        pool.query("SELECT api_url FROM sources WHERE method ILIKE '%api%'")
     ])
 
-    const scrapeSourcesUrl = sourcesResult.rows.map(row => row.url).filter(Boolean)
+    const scrapeSources = sourcesResult.rows
+        .filter(row => row.url)
+        .map(row => ({
+            id: row.id,
+            url: row.url,
+            sitemapAvailable: row.sitemap_available === true,
+            includeTags: parseIncludeTags(row.includeTags)
+        }))
+
     const apiSourceUrl = apiResult.rows.map(row => row.api_url).filter(Boolean)
 
     logger.info(
-        { scrapeSources: scrapeSourcesUrl.length, apiSources: apiSourceUrl.length },
+        { scrapeSources: scrapeSources.length, apiSources: apiSourceUrl.length },
         'Queueing sources'
     )
 
-    // Queueing the scraping websites. Each job carries an object so the worker
-    // can receive additional metadata later without changing the queue contract.
     const scrapeJobs = await Promise.all(
-        scrapeSourcesUrl.map(url => {
-            logger.debug({ url }, 'Queueing scrape job')
-            return queue.add(SCRAPE_JOB_NAME, { url })
+        scrapeSources.map(source => {
+            logger.debug(
+                {
+                    sourceId: source.id,
+                    url: source.url,
+                    sitemapAvailable: source.sitemapAvailable,
+                    includeTags: source.includeTags.length
+                },
+                'Queueing scrape source'
+            )
+            return scrapeQueue.add(SCRAPE_JOB_NAME, { source })
         })
     )
 
-    // Queueing the API websites
     const apiJobs = await Promise.all(
         apiSourceUrl.map(url => {
             logger.debug({ url }, 'Queueing API job')
-            return queue.add(API_JOB_NAME, { url })
+            return apiQueue.add(API_JOB_NAME, { url })
         })
     )
 
@@ -51,7 +77,7 @@ export async function scrapeService({ pool, queue, logger }) {
 
     return {
         msg: {
-            scrapeSourcesUrl,
+            scrapeSources,
             apiSourceUrl,
             queued: { scrape: scrapeJobs.length, api: apiJobs.length }
         },
