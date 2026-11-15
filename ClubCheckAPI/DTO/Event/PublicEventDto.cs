@@ -23,6 +23,8 @@ public record PublicEventDto()
     
     public Uri? AnnouncementUrl { get; set; }
     public Uri? TicketUrl { get; set; }
+    
+    public Uri? PosterUrl { get; set; }
     public Price?  Price { get; set; }
     public DateTime? EndDate { get; set; }
     

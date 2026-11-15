@@ -20,6 +20,8 @@ public record CreateEventDto()
     public Uri? TicketUrl { get; set; }
     public Uri? AnnouncementUrl { get; set; }
     
+    public Uri? PosterUrl { get; set; }
+    
     // Connection with other DTO's
     [Required]
     public required int VenueId {get; set;}

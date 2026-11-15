@@ -35,4 +35,6 @@ public class Event
     public Uri? TicketUrl { get; set; }
 
     public Uri? AnnouncementUrl { get; set; }
+    
+    public Uri? PosterUrl { get; set; }
 }
