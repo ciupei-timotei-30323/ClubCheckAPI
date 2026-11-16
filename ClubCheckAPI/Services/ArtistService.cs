@@ -7,11 +7,17 @@ using ClubCheckAPI.IServices;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.Buffers.Binary;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ClubCheckAPI.Services;
 
 public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> logger) : IArtistService
 {
+    private static readonly Regex GeneratedSlugSuffix = new(@"-\d+$", RegexOptions.Compiled);
+
     public async Task<PublicArtistDetailedDto> GetArtistBySlug(string slug, CancellationToken ct)
     {
         var artistDto = await context.Artists
@@ -48,23 +54,45 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
 
     public async Task<ArtistSummaryDto> Create(CreateArtistDto dto, CancellationToken ct)
     {
-        var existing =
-            await context.Artists.FirstOrDefaultAsync(a => a.Name == dto.Name, ct);
+        var baseSlug = GetBaseSlug(dto);
+        var lockKey = GetArtistIdentityLockKey(dto.Name, baseSlug);
 
-
-        if (existing is not null)
+        await context.Database.OpenConnectionAsync(ct);
+        try
         {
-            if (AreSlugsTheSame(existing.Slug, dto.Slug))
+            // Serialize create attempts for the same logical artist across API instances.
+            // The slug unique index still protects slug allocation between different artists.
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_lock({lockKey})", ct);
+
+            return await CreateLocked(dto, baseSlug, ct);
+        }
+        finally
+        {
+            try
             {
-                existing.Slug = dto.Slug;
-                return ToSummaryDto(existing);
+                await context.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_unlock({lockKey})", CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                // Closing the connection releases any session-level advisory lock left behind.
+                logger.LogWarning(e, "Could not release artist creation lock for {Name}", dto.Name);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
             }
         }
+    }
 
-        bool doesSlugContainOnlyName = dto.Slug.EndsWith(dto.Name) || dto.Slug == "";
-        var baseSlug = doesSlugContainOnlyName
-            ? SlugHelper.Slugify(dto.Name, nameof(Artist))
-            : dto.Slug;
+    private async Task<ArtistSummaryDto> CreateLocked(CreateArtistDto dto, string baseSlug, CancellationToken ct)
+    {
+        var existing = await FindMatchingArtist(dto.Name, dto.Slug, ct);
+        if (existing is not null)
+        {
+            return ToSummaryDto(existing);
+        }
 
         const int maxSlugAttempts = 10;
 
@@ -83,9 +111,19 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
                 await context.SaveChangesAsync(ct);
                 return ToSummaryDto(artist);
             }
-            catch (DbUpdateException e) when (attempt < maxSlugAttempts && IsArtistSlugConflict(e))
+            catch (DbUpdateException e) when (IsArtistSlugConflict(e))
             {
                 context.Entry(artist).State = EntityState.Detached;
+
+                // Another request may have inserted this exact artist after our initial lookup.
+                // The unique index is the atomic arbiter, so return the winner instead of
+                // creating a duplicate with an incremented slug.
+                existing = await FindMatchingArtist(dto.Name, dto.Slug, ct);
+                if (existing is not null)
+                {
+                    return ToSummaryDto(existing);
+                }
+
                 logger.LogWarning(e,
                     "Artist slug {Slug} was taken while creating {Name}. Retrying with a new slug (attempt {Attempt}/{MaxAttempts})",
                     artist.Slug, dto.Name, attempt, maxSlugAttempts);
@@ -97,7 +135,36 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             }
         }
 
+        logger.LogError("Could not create a unique slug for artist {name}", dto.Name);
         throw new DbException($"Could not create a unique slug for artist {dto.Name}");
+    }
+
+    private static string GetBaseSlug(CreateArtistDto dto)
+    {
+        bool doesSlugContainOnlyName = dto.Slug.EndsWith(dto.Name) || dto.Slug == "";
+        return doesSlugContainOnlyName
+            ? SlugHelper.Slugify(dto.Name, nameof(Artist))
+            : dto.Slug;
+    }
+
+    private static long GetArtistIdentityLockKey(string name, string slug)
+    {
+        var canonicalSlug = GeneratedSlugSuffix.Replace(slug, string.Empty);
+        var identity = $"{name.Trim().ToLowerInvariant()}\n{canonicalSlug.ToLowerInvariant()}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
+        return BinaryPrimitives.ReadInt64LittleEndian(hash);
+    }
+
+    private async Task<Artist?> FindMatchingArtist(string name, string slug, CancellationToken ct)
+    {
+        var normalizedName = name.Trim().ToLowerInvariant();
+        var candidates = await context.Artists
+            .AsNoTracking()
+            .Where(a => a.Name.Trim().ToLower() == normalizedName)
+            .OrderBy(a => a.Id)
+            .ToListAsync(ct);
+
+        return candidates.FirstOrDefault(a => AreSlugsTheSame(a.Slug, slug));
     }
 
     private static bool IsArtistSlugConflict(DbUpdateException exception) =>
@@ -119,6 +186,10 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         // Checks is one of the slugs is empty and returns false
         if (string.IsNullOrEmpty(localSlug) || string.IsNullOrEmpty(externalSlug))
             return false;
+
+        // Generated collision suffixes ("-2", "-3", ...) are not part of the artist's identity.
+        localSlug = GeneratedSlugSuffix.Replace(localSlug, string.Empty);
+        externalSlug = GeneratedSlugSuffix.Replace(externalSlug, string.Empty);
 
         // Get the words decomposed int o a list
         List<string> localSlugDecomposed = new List<string>(localSlug.Split(EscapeChars()));
