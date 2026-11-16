@@ -27,7 +27,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         PosterUrl = e.PosterUrl,
         Price = e.Price == null
             ? null
-            : new PublicPriceDto { Value = e.Price.Value, Currency = e.Price.Currency },
+            : new PublicPriceDto { Value = e.Price.Value, Currency = (PublicCurrency?)e.Price.Currency },
         City = e.Venue.Address!.City,
         VenueName = e.Venue.Name,
         GenresName = e.Genres.Select(g => g.Name).ToList(),

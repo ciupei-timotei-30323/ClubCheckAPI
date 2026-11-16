@@ -1,4 +1,5 @@
 using ClubCheckAPI.ApiAuth;
+using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.IServices;
 using Microsoft.EntityFrameworkCore;
@@ -67,6 +68,17 @@ try
         options.AddDocumentTransformer((document, _, _) =>
         {
             document.Servers = [];
+            return Task.CompletedTask;
+        });
+
+        options.AddSchemaTransformer((schema, context, _) =>
+        {
+            if (context.JsonTypeInfo.Type == typeof(PublicCurrency) ||
+                context.JsonTypeInfo.Type == typeof(PublicCurrency?))
+            {
+                schema.Type = JsonSchemaType.String | JsonSchemaType.Null;
+            }
+
             return Task.CompletedTask;
         });
     });

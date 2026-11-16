@@ -97,7 +97,7 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
             Name = e.Name,
             Price = e.Price == null
                 ? null
-                : new PublicPriceDto { Value = e.Price.Value, Currency = e.Price.Currency },
+                : new PublicPriceDto { Value = e.Price.Value, Currency = (PublicCurrency?)e.Price.Currency },
             Slug = e.Slug,
             StartDate = e.StartDate,
             TicketUrl = e.TicketUrl,
