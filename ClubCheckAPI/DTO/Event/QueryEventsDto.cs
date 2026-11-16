@@ -60,6 +60,12 @@ public record QueryEventsDto()
     public string? Artist { get; set; }
 
     /// <summary>
+    /// Case-insensitive OR search across the event name, venue name and any linked artist name.
+    /// This filter is combined with all other filters using AND.
+    /// </summary>
+    public string? Search { get; set; }
+
+    /// <summary>
     /// One-based page number. Values below 1 are clamped to 1.
     /// </summary>
     public int Page { get; set; } = 1;

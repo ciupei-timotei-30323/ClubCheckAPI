@@ -163,6 +163,15 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         if (!string.IsNullOrWhiteSpace(q.Artist))
             query = query.Where(e => e.Artists.Any(a => EF.Functions.ILike(a.Name, $"%{q.Artist}%")));
 
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            var searchPattern = $"%{q.Search}%";
+            query = query.Where(e =>
+                EF.Functions.ILike(e.Name, searchPattern) ||
+                EF.Functions.ILike(e.Venue.Name, searchPattern) ||
+                e.Artists.Any(a => EF.Functions.ILike(a.Name, searchPattern)));
+        }
+
         var totalCount = await query.CountAsync(ct);
 
         var items = await query

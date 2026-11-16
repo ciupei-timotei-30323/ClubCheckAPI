@@ -104,6 +104,28 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
     }
 
     [Fact]
+    public async Task Get_PublicEvents_SearchMatchesNameArtistAndVenueAndCombinesWithFilters()
+    {
+        await SeedContractData();
+
+        var artistMatch = await SearchEvents(new Dictionary<string, string?> { ["Search"] = "Contract Artist" });
+        Assert.Single(artistMatch.Items);
+        Assert.Equal("Contract Page 1", artistMatch.Items.First().Name);
+
+        var venueMatch = await SearchEvents(new Dictionary<string, string?> { ["Search"] = "Contract Venue Bucharest" });
+        Assert.Equal(4, venueMatch.TotalCount);
+        Assert.All(venueMatch.Items, item => Assert.Equal("Bucharest", item.City));
+
+        var combined = await SearchEvents(new Dictionary<string, string?>
+        {
+            ["Search"] = "Contract Dates",
+            ["City"] = "Cluj-Napoca"
+        });
+        Assert.Equal(3, combined.TotalCount);
+        Assert.All(combined.Items, item => Assert.StartsWith("Contract Dates", item.Name));
+    }
+
+    [Fact]
     public async Task Get_PublicEventFilters_ReturnsActiveEventOptions()
     {
         await SeedContractData();
@@ -188,6 +210,20 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
         return result;
     }
 
+    private async Task<PagedResult<PublicEventDto>> SearchEvents(Dictionary<string, string?> query)
+    {
+        query["PageSize"] = "100";
+        var uri = QueryHelpers.AddQueryString(EventsUri, query);
+        var response = await _httpClientNotAuth.GetAsync(uri);
+        var result = await response.Content.ReadFromJsonAsync<PagedResult<PublicEventDto>>();
+
+        outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(result);
+        return result;
+    }
+
     private async Task<List<int>> GetExpectedEventIds()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -235,9 +271,11 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
 
         var house = new Genre { Name = "Contract House" };
         var techno = new Genre { Name = "Contract Techno" };
+        var contractArtist = new Artist { Name = "Contract Artist", Slug = "contract-artist|test" };
 
         context.Venues.AddRange(clujVenue, bucharestVenue);
         context.Genre.AddRange(house, techno);
+        context.Artists.Add(contractArtist);
         await context.SaveChangesAsync();
 
         var sharedStartDate = new DateTime(2030, 4, 1, 18, 0, 0, DateTimeKind.Utc);
@@ -257,7 +295,8 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
                     4 => new Price(100, Currency.USD),
                     _ => null
                 },
-                Genres = index <= 3 ? [house] : [techno]
+                Genres = index <= 3 ? [house] : [techno],
+                Artists = index == 1 ? [contractArtist] : []
             })
             .ToList();
 
