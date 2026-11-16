@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ClubCheckAPI.DomainClasses;
+using ClubCheckAPI.DTO;
 using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.DTO.Genre;
@@ -159,7 +160,7 @@ public class EventQueryingTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
         // Act
         var response = await _httpClientNotAuth.GetAsync(uriWithQuery);
-        var responseDto = await response.Content.ReadFromJsonAsync<List<PublicEventDto>>();
+        var responseDto = await response.Content.ReadFromJsonAsync<PagedResult<PublicEventDto>>();
 
         if (responseDto != null)
         {
@@ -169,7 +170,7 @@ public class EventQueryingTests(IntegrationTestWebAppFactory factory, ITestOutpu
                 WriteIndented = true
             };
 
-            // Serialize the entire list at once instead of looping
+            // Serialize the entire result at once instead of looping
             string readableOutput = JsonSerializer.Serialize(responseDto, jsonOptions);
 
             outputHelper.WriteLine(readableOutput);
@@ -177,6 +178,10 @@ public class EventQueryingTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(responseDto);
+        Assert.Equal(1, responseDto.Page);
+        Assert.Equal(10, responseDto.PageSize);
+        Assert.True(responseDto.TotalCount >= responseDto.Items.Count);
     }
 
     [Fact]
@@ -193,12 +198,13 @@ public class EventQueryingTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
         // Act
         var response = await _httpClientNotAuth.GetAsync(uriWithQuery);
-        var responseDto = await response.Content.ReadFromJsonAsync<List<PublicEventDto>>();
+        var responseDto = await response.Content.ReadFromJsonAsync<PagedResult<PublicEventDto>>();
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(responseDto);
-        Assert.Equal(5, responseDto.Count); // Ensures PageSize is respected
+        Assert.Equal(5, responseDto.Items.Count); // Ensures PageSize is respected
+        Assert.Equal(5, responseDto.PageSize);
     }
 
     [Fact]
@@ -237,12 +243,13 @@ public class EventQueryingTests(IntegrationTestWebAppFactory factory, ITestOutpu
 
         // Act
         var response = await _httpClientNotAuth.GetAsync(uriWithQuery);
-        var responseDto = await response.Content.ReadFromJsonAsync<List<PublicEventDto>>();
+        var responseDto = await response.Content.ReadFromJsonAsync<PagedResult<PublicEventDto>>();
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode); // Should not throw a 404 or 500
         Assert.NotNull(responseDto);
-        Assert.Empty(responseDto); // Should return an empty array []
+        Assert.Empty(responseDto.Items); // Should return an empty page
+        Assert.Equal(0, responseDto.TotalCount);
     }
 
     // This fails because some events are dup0licates so 20 events is not a sure thing

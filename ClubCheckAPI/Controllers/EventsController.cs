@@ -1,3 +1,4 @@
+using ClubCheckAPI.DTO;
 using ClubCheckAPI.DTO.Event;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
@@ -20,10 +21,10 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public")]
-    [ProducesResponseType(typeof(ICollection<PublicEventDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PublicEventDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ICollection<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
+    public async Task<ActionResult<PagedResult<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
     {
         logger.LogInformation("Getting events {query}",  query);
         return Ok(await service.GetEvents(query, ct));

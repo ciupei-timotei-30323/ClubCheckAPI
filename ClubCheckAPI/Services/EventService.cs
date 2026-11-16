@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using ClubCheckAPI.DTO;
 using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.Exceptions;
@@ -111,7 +112,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         };
     }
 
-    public async Task<ICollection<PublicEventDto>> GetEvents(QueryEventsDto q, CancellationToken ct)
+    public async Task<PagedResult<PublicEventDto>> GetEvents(QueryEventsDto q, CancellationToken ct)
     {
         var page = Math.Max(q.Page, 1);
         var pageSize = Math.Clamp(q.PageSize, 1, 100);
@@ -152,6 +153,8 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         if (!string.IsNullOrWhiteSpace(q.Artist))
             query = query.Where(e => e.Artists.Any(a => EF.Functions.ILike(a.Name, $"%{q.Artist}%")));
 
+        var totalCount = await query.CountAsync(ct);
+
         var items = await query
             .OrderBy(e => e.StartDate)
             .ThenBy(e => e.Id)
@@ -160,7 +163,13 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             .Select(ToPublicDto)
             .ToListAsync(ct);
 
-        return items;
+        return new PagedResult<PublicEventDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct)
