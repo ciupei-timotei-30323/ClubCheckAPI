@@ -4,7 +4,9 @@ import {
   addDays,
   formatDateOnly,
   formatDateRange,
+  formatEventRange,
   getWeekendRange,
+  isEventEnded,
   isDateOnly,
   parseDateOnly,
   toApiEnd,
@@ -85,5 +87,78 @@ describe("Bucharest day boundaries", () => {
       new Date(toApiEnd("2025-10-26")).getTime() -
         new Date(toApiStart("2025-10-27")).getTime()
     ).toBe(-1)
+  })
+})
+
+describe("event date ranges", () => {
+  it("formats same-day events as a time range", () => {
+    const label = formatEventRange(
+      "2026-11-16T17:00:00.000Z",
+      "2026-11-16T19:00:00.000Z"
+    )
+
+    expect(label).toContain("16 noiembrie 2026")
+    expect(label).toContain("19:00")
+    expect(label).toContain("21:00")
+  })
+
+  it("formats multi-day events with both days", () => {
+    const label = formatEventRange(
+      "2026-11-16T17:00:00.000Z",
+      "2026-11-18T19:00:00.000Z"
+    )
+
+    expect(label).toContain("16 noiembrie 2026")
+    expect(label).toContain("18 noiembrie 2026")
+  })
+
+  it("falls back to the start when the end is missing or invalid", () => {
+    const start = "2026-11-16T17:00:00.000Z"
+    const expected = formatEventRange(start, null)
+
+    expect(formatEventRange(start, "")).toBe(expected)
+    expect(formatEventRange(start, "not-a-date")).toBe(expected)
+    expect(formatEventRange(start, "2026-11-15T17:00:00.000Z")).toBe(expected)
+  })
+})
+
+describe("event ended state", () => {
+  const now = new Date("2026-11-16T20:00:00.000Z")
+
+  it("detects an end date in the past", () => {
+    expect(
+      isEventEnded(
+        "2026-11-16T17:00:00.000Z",
+        "2026-11-16T19:00:00.000Z",
+        now
+      )
+    ).toBe(true)
+  })
+
+  it("falls back to the start date when the end date is missing", () => {
+    expect(
+      isEventEnded("2026-11-16T19:00:00.000Z", null, now)
+    ).toBe(true)
+    expect(
+      isEventEnded("2026-11-16T21:00:00.000Z", undefined, now)
+    ).toBe(false)
+  })
+
+  it("does not classify future or invalid dates as ended", () => {
+    expect(
+      isEventEnded(
+        "2026-11-16T17:00:00.000Z",
+        "2026-11-16T21:00:00.000Z",
+        now
+      )
+    ).toBe(false)
+    expect(isEventEnded("not-a-date", null, now)).toBe(false)
+    expect(
+      isEventEnded(
+        "2026-11-16T21:00:00.000Z",
+        "not-a-date",
+        now
+      )
+    ).toBe(false)
   })
 })

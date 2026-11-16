@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import { AppProviders } from "@/components/providers"
 import { strings } from "@/lib/i18n/ro"
+import { getSiteUrl } from "@/lib/site"
 
 import "./globals.css"
 
@@ -17,6 +18,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: getSiteUrl(),
   title: strings.meta.title,
   description: strings.meta.description,
 }

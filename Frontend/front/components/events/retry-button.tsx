@@ -7,12 +7,17 @@ import { RefreshCwIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { strings } from "@/lib/i18n/ro"
 
-export function RetryButton() {
+type RetryButtonProps = {
+  onRetry?: () => void
+}
+
+export function RetryButton({ onRetry }: RetryButtonProps = {}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const retry = () => {
     startTransition(() => {
+      onRetry?.()
       router.refresh()
     })
   }

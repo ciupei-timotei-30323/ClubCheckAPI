@@ -1,16 +1,26 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { EVENTS_PAGE_SIZE } from "@/lib/events/filters"
 
-export function EventGridSkeleton() {
+type EventGridSkeletonProps = {
+  count?: number
+  showHeader?: boolean
+}
+
+export function EventGridSkeleton({
+  count = EVENTS_PAGE_SIZE,
+  showHeader = true,
+}: EventGridSkeletonProps = {}) {
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <Skeleton className="h-5 w-32" />
-        <Skeleton className="h-6 w-64" />
-      </div>
+      {showHeader && (
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-6 w-64" />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
-        {Array.from({ length: EVENTS_PAGE_SIZE }).map((_, index) => (
+        {Array.from({ length: count }).map((_, index) => (
           <div key={index} className="flex flex-col">
             <Skeleton className="aspect-[2/3] w-full rounded-md" />
             <div className="space-y-2 pt-3">

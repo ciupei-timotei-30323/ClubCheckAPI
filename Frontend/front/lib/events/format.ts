@@ -8,6 +8,34 @@ export function formatEventLocation(
   return city ? `${city} · ${venueName}` : venueName
 }
 
+export function isHttpUrl(value: string | null | undefined): value is string {
+  if (!value) {
+    return false
+  }
+
+  try {
+    const url = new URL(value)
+
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+export function truncateText(value: string, maxLength: number): string {
+  const text = value.replace(/\s+/g, " ").trim()
+
+  if (text.length <= maxLength) {
+    return text
+  }
+
+  const clipped = text.slice(0, Math.max(0, maxLength - 1)).trimEnd()
+  const lastSpace = clipped.lastIndexOf(" ")
+  const base = lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped
+
+  return `${base}…`
+}
+
 export function formatPrice(price: PublicEvent["price"]): string | null {
   if (
     !price ||

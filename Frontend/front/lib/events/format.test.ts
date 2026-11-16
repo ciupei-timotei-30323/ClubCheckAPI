@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { formatEventLocation, formatPrice } from "./format"
+import {
+  formatEventLocation,
+  formatPrice,
+  isHttpUrl,
+  truncateText,
+} from "./format"
 
 describe("formatEventLocation", () => {
   it("omits a null city without a dangling separator", () => {
@@ -34,5 +39,28 @@ describe("formatPrice", () => {
 
     expect(formatted).toContain("50")
     expect(formatted).toContain("RON")
+  })
+})
+
+describe("isHttpUrl", () => {
+  it("accepts only absolute http(s) URLs", () => {
+    expect(isHttpUrl("https://example.com/tickets")).toBe(true)
+    expect(isHttpUrl("http://example.com")).toBe(true)
+    expect(isHttpUrl("javascript:alert(1)")).toBe(false)
+    expect(isHttpUrl("/relative")).toBe(false)
+    expect(isHttpUrl(null)).toBe(false)
+    expect(isHttpUrl("not a url")).toBe(false)
+  })
+})
+
+describe("truncateText", () => {
+  it("collapses whitespace and truncates on a word boundary", () => {
+    expect(truncateText("  Un   eveniment\ncu detalii  ", 80)).toBe(
+      "Un eveniment cu detalii"
+    )
+    expect(truncateText("Un eveniment cu detalii multe", 15)).toBe(
+      "Un eveniment…"
+    )
+    expect(truncateText("Scurt", 15)).toBe("Scurt")
   })
 })

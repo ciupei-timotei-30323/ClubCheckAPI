@@ -6,7 +6,11 @@ import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { toInteger } from "@/lib/api/main/normalize"
 import type { PublicEvent } from "@/lib/api/main/types"
 import { formatEventDate } from "@/lib/events/dates"
-import { formatEventLocation, formatPrice } from "@/lib/events/format"
+import {
+  formatEventLocation,
+  formatPrice,
+  isHttpUrl,
+} from "@/lib/events/format"
 import { strings } from "@/lib/i18n/ro"
 
 import { FavoriteButton } from "./favorite-button"
@@ -29,7 +33,7 @@ export function EventCard({ event, priority = false }: EventCardProps) {
   const price = formatPrice(event.price)
   const date = formatEventDate(event.startDate)
   const location = formatEventLocation(event.city, event.venueName)
-  const posterUrl = isUsablePosterUrl(event.posterUrl) ? event.posterUrl : null
+  const posterUrl = isHttpUrl(event.posterUrl) ? event.posterUrl : null
   const eventId = toInteger(event.id)
 
   return (
@@ -94,18 +98,4 @@ export function EventCard({ event, priority = false }: EventCardProps) {
       )}
     </article>
   )
-}
-
-function isUsablePosterUrl(value: string | null | undefined): value is string {
-  if (!value) {
-    return false
-  }
-
-  try {
-    const url = new URL(value)
-
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
 }

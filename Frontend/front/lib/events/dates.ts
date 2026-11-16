@@ -66,21 +66,69 @@ export function toApiEnd(dateOnly: string): string {
   return new Date(new Date(nextDayStart).getTime() - 1).toISOString()
 }
 
-export function formatEventDate(isoDate: string): string {
-  const date = new Date(isoDate)
+const EVENT_DATE_FORMATTER = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+})
 
-  if (Number.isNaN(date.getTime())) {
+const EVENT_CARD_DATE_FORMATTER = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+})
+
+export function formatEventDate(isoDate: string): string {
+  const date = parseInstant(isoDate)
+
+  return date ? EVENT_CARD_DATE_FORMATTER.format(date) : ""
+}
+
+export function formatEventRange(
+  startIso: string,
+  endIso?: string | null
+): string {
+  const start = parseInstant(startIso)
+
+  if (!start) {
     return ""
   }
 
-  return new Intl.DateTimeFormat(LOCALE, {
-    timeZone: TIME_ZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  const end = parseInstant(endIso)
+
+  if (!end || end.getTime() < start.getTime()) {
+    return EVENT_DATE_FORMATTER.format(start)
+  }
+
+  return EVENT_DATE_FORMATTER.formatRange(start, end)
+}
+
+export function isEventEnded(
+  startDate: string,
+  endDate: string | null | undefined,
+  now: Date = new Date()
+): boolean {
+  // The API treats an event without an end date as ending at its start.
+  const end = parseInstant(endDate) ?? parseInstant(startDate)
+
+  return end !== null && end.getTime() < now.getTime()
+}
+
+function parseInstant(value: string | null | undefined): Date | null {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 export function formatDateRange(from: string, to: string): string {
