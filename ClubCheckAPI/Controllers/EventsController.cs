@@ -28,6 +28,21 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     }
 
     /// <summary>
+    /// Gets the most active cities, genres, artists and venues based on their linked event counts.
+    /// <remarks>This endpoint is <c>Public</c>.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("public/most-active")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<MostActiveStatisticsDto>> GetMostActive([FromQuery] MostActiveQueryDto query,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Getting most active event statistics {query}", query);
+        return Ok(await service.GetMostActive(query, ct));
+    }
+
+    /// <summary>
     /// For retreival of a single Event object using its name.
     /// <remarks>
     /// <list type="number">

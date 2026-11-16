@@ -31,6 +31,86 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             .ToList()
     };
 
+    public async Task<MostActiveStatisticsDto> GetMostActive(MostActiveQueryDto query, CancellationToken ct)
+    {
+        var genreRows = await context.Events
+            .AsNoTracking()
+            .SelectMany(e => e.Genres)
+            .GroupBy(g => new { g.Id, g.Name })
+            .Select(g => new { g.Key.Id, g.Key.Name, EventCount = g.Count() })
+            .OrderByDescending(g => g.EventCount)
+            .ThenBy(g => g.Name)
+            .Take(query.TopGenresLimit)
+            .ToListAsync(ct);
+
+        var artistRows = await context.Events
+            .AsNoTracking()
+            .SelectMany(e => e.Artists)
+            .GroupBy(a => new { a.Id, a.Name })
+            .Select(g => new { g.Key.Id, g.Key.Name, EventCount = g.Count() })
+            .OrderByDescending(g => g.EventCount)
+            .ThenBy(g => g.Name)
+            .Take(query.TopArtistsLimit)
+            .ToListAsync(ct);
+
+        var venueRows = await context.Events
+            .AsNoTracking()
+            .GroupBy(e => new { e.VenueId, e.Venue.Name })
+            .Select(g => new { g.Key.VenueId, g.Key.Name, EventCount = g.Count() })
+            .OrderByDescending(g => g.EventCount)
+            .ThenBy(g => g.Name)
+            .Take(query.TopVenuesLimit)
+            .ToListAsync(ct);
+
+        var cityRows = await context.Events
+            .AsNoTracking()
+            .Where(e => e.Venue.Address!.City != null &&
+                        e.Venue.Address.City != "" &&
+                        e.Venue.Address.City != "-")
+            .GroupBy(e => e.Venue.Address!.City)
+            .Select(g => new { Name = g.Key, EventCount = g.Count() })
+            .OrderByDescending(g => g.EventCount)
+            .ThenBy(g => g.Name)
+            .ToListAsync(ct);
+
+        var limitedCities = query.TopCitiesLimit is { } cityLimit
+            ? cityRows.Take(cityLimit)
+            : cityRows;
+
+        var rankedCities = limitedCities
+            .Select((city, index) => new MostActiveItemDto
+            {
+                Id = (index + 1).ToString(),
+                Name = city.Name,
+                EventCount = city.EventCount
+            })
+            .ToList();
+
+        var totalItems = rankedCities.Count;
+        var totalPages = totalItems == 0
+            ? 0
+            : (int)Math.Ceiling(totalItems / (double)query.PageSize);
+        var skip = (long)(query.Page - 1) * query.PageSize;
+        var pagedCities = skip >= totalItems
+            ? []
+            : rankedCities.Skip((int)skip).Take(query.PageSize).ToList();
+
+        return new MostActiveStatisticsDto
+        {
+            TopCities = pagedCities,
+            TopGenres = genreRows.Select(g => ToMostActiveItem(g.Id, g.Name, g.EventCount)).ToList(),
+            TopArtists = artistRows.Select(a => ToMostActiveItem(a.Id, a.Name, a.EventCount)).ToList(),
+            TopVenues = venueRows.Select(v => ToMostActiveItem(v.VenueId, v.Name, v.EventCount)).ToList(),
+            Pagination = new PaginationDto
+            {
+                Page = query.Page,
+                PageSize = query.PageSize,
+                TotalItems = totalItems,
+                TotalPages = totalPages
+            }
+        };
+    }
+
     public async Task<ICollection<PublicEventDto>> GetEvents(QueryEventsDto q, CancellationToken ct)
     {
         var page = Math.Max(q.Page, 1);
@@ -198,6 +278,13 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
     }
 
     // Helper private methods
+
+    private static MostActiveItemDto ToMostActiveItem(int id, string name, int eventCount) => new()
+    {
+        Id = id.ToString(),
+        Name = name,
+        EventCount = eventCount
+    };
 
     private static async Task<List<Genre>> ValidateGenresExistence(ILogger<EventService> logger,
         ClubCheckAPIContext context, CreateEventDto eventDto,
