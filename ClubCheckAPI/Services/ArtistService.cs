@@ -6,6 +6,7 @@ using ClubCheckAPI.Helpers;
 using ClubCheckAPI.IServices;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ClubCheckAPI.Services;
 
@@ -61,26 +62,50 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
         }
 
         bool doesSlugContainOnlyName = dto.Slug.EndsWith(dto.Name) || dto.Slug == "";
-        var created = context.Artists.Add(new Artist()
-        {
-            Name = dto.Name,
-            Slug = doesSlugContainOnlyName
-                ? await FindFreeSlug(SlugHelper.Slugify(dto.Name, nameof(Artist)), ct)
-                : await FindFreeSlug(dto.Slug, ct)
-        });
+        var baseSlug = doesSlugContainOnlyName
+            ? SlugHelper.Slugify(dto.Name, nameof(Artist))
+            : dto.Slug;
 
+        const int maxSlugAttempts = 10;
 
-        try
+        for (var attempt = 1; attempt <= maxSlugAttempts; attempt++)
         {
-            await context.SaveChangesAsync(ct);
-            return ToSummaryDto(created.Entity);
+            var artist = new Artist
+            {
+                Name = dto.Name,
+                Slug = await FindFreeSlug(baseSlug, ct)
+            };
+
+            context.Artists.Add(artist);
+
+            try
+            {
+                await context.SaveChangesAsync(ct);
+                return ToSummaryDto(artist);
+            }
+            catch (DbUpdateException e) when (attempt < maxSlugAttempts && IsArtistSlugConflict(e))
+            {
+                context.Entry(artist).State = EntityState.Detached;
+                logger.LogWarning(e,
+                    "Artist slug {Slug} was taken while creating {Name}. Retrying with a new slug (attempt {Attempt}/{MaxAttempts})",
+                    artist.Slug, dto.Name, attempt, maxSlugAttempts);
+            }
+            catch (DbUpdateException e)
+            {
+                logger.LogError(e, "An error occured while trying to create a new artist {name}", dto.Name);
+                throw new DbException(e.Message);
+            }
         }
-        catch (DbUpdateException e)
-        {
-            logger.LogError(e, "An error occured while trying to create a new artist {name}", dto.Name);
-            throw new DbException(e.Message);
-        }
+
+        throw new DbException($"Could not create a unique slug for artist {dto.Name}");
     }
+
+    private static bool IsArtistSlugConflict(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_Artists_Slug"
+        };
 
 
     /// <summary>
@@ -125,7 +150,9 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
     private async Task<string> FindFreeSlug(string baseSlug, CancellationToken ct)
     {
         var taken = await context.Artists
-            .Where(a => a.Slug == baseSlug || a.Slug.StartsWith(baseSlug + "|"))
+            .Where(a => a.Slug == baseSlug ||
+                        a.Slug.StartsWith(baseSlug + "-") ||
+                        a.Slug.StartsWith(baseSlug + "|"))
             .Select(a => a.Slug)
             .ToListAsync(ct);
 
