@@ -8,6 +8,7 @@ using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Buffers.Binary;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -149,22 +150,60 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
 
     private static long GetArtistIdentityLockKey(string name, string slug)
     {
-        var canonicalSlug = GeneratedSlugSuffix.Replace(slug, string.Empty);
-        var identity = $"{name.Trim().ToLowerInvariant()}\n{canonicalSlug.ToLowerInvariant()}";
+        var canonicalSlug = CanonicalizeSlug(slug);
+        var identity = $"{NormalizeArtistName(name)}\n{canonicalSlug.ToLowerInvariant()}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
         return BinaryPrimitives.ReadInt64LittleEndian(hash);
     }
 
     private async Task<Artist?> FindMatchingArtist(string name, string slug, CancellationToken ct)
     {
-        var normalizedName = name.Trim().ToLowerInvariant();
+        var normalizedName = NormalizeArtistName(name);
+        var nameForSql = name.Trim().ToLowerInvariant();
+        var canonicalSlug = CanonicalizeSlug(slug);
+        string? uuidPrefix = TryGetUuidFromSlug(slug, out var uuid)
+            ? $"{uuid:D}|"
+            : null;
+
         var candidates = await context.Artists
             .AsNoTracking()
-            .Where(a => a.Name.Trim().ToLower() == normalizedName)
+            .Where(a =>
+                a.Name.Trim().ToLower() == nameForSql ||
+                a.Slug == canonicalSlug ||
+                a.Slug.StartsWith(canonicalSlug + "-") ||
+                (uuidPrefix != null && a.Slug.StartsWith(uuidPrefix)))
             .OrderBy(a => a.Id)
             .ToListAsync(ct);
 
-        return candidates.FirstOrDefault(a => AreSlugsTheSame(a.Slug, slug));
+        return candidates.FirstOrDefault(a =>
+            NormalizeArtistName(a.Name) == normalizedName &&
+            AreSlugsTheSame(a.Slug, slug));
+    }
+
+    private static string NormalizeArtistName(string name)
+    {
+        var decomposed = name.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(decomposed.Length);
+
+        foreach (var character in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Trim().ToLowerInvariant();
+    }
+
+    private static string CanonicalizeSlug(string slug) =>
+        GeneratedSlugSuffix.Replace(slug, string.Empty);
+
+    private static bool TryGetUuidFromSlug(string slug, out Guid uuid)
+    {
+        var separatorIndex = slug.IndexOf('|');
+        var firstSegment = separatorIndex >= 0 ? slug[..separatorIndex] : slug;
+        return Guid.TryParse(firstSegment, out uuid);
     }
 
     private static bool IsArtistSlugConflict(DbUpdateException exception) =>
@@ -188,8 +227,8 @@ public class ArtistService(ClubCheckAPIContext context, ILogger<ArtistService> l
             return false;
 
         // Generated collision suffixes ("-2", "-3", ...) are not part of the artist's identity.
-        localSlug = GeneratedSlugSuffix.Replace(localSlug, string.Empty);
-        externalSlug = GeneratedSlugSuffix.Replace(externalSlug, string.Empty);
+        localSlug = CanonicalizeSlug(localSlug);
+        externalSlug = CanonicalizeSlug(externalSlug);
 
         // Get the words decomposed int o a list
         List<string> localSlugDecomposed = new List<string>(localSlug.Split(EscapeChars()));
