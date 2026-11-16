@@ -11,6 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** fetches detailed information about an artist based on its name. <remarks>This endpoint is `Public`</remarks> */
         get: {
             parameters: {
                 query?: never;
@@ -22,6 +23,17 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PublicArtistDetailedDto"];
+                        "application/json": components["schemas"]["PublicArtistDetailedDto"];
+                        "text/json": components["schemas"]["PublicArtistDetailedDto"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -52,6 +64,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         post: {
             parameters: {
                 query?: never;
@@ -67,7 +85,6 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -93,21 +110,54 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * FOr batch retrieval of Events based on a query.
+         *         <remarks>
+         *         1. This endpoint is Public
+         *     1. This endpoint is Non-Idempotent
+         *         </remarks>
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description Optional active-state filter. */
                     IsActive?: boolean;
+                    /**
+                     * @description Inclusive start of the requested date range as an ISO-8601 instant with offset.
+                     *     An event matches when its end (or start, when no end is set) is on or after this instant.
+                     *     Omit for an open-ended start.
+                     */
                     StartDate?: string;
+                    /**
+                     * @description Inclusive end of the requested date range as an ISO-8601 instant with offset.
+                     *     An event matches when its start is on or before this instant.
+                     *     Omit for an open-ended end.
+                     */
                     EndDate?: string;
+                    /** @description Case-insensitive substring filter on the event name. */
                     Name?: string;
+                    /** @description Case-insensitive substring filter on the organizer. */
                     Organizer?: string;
+                    /** @description Case-insensitive substring filter on the venue city. */
                     City?: string;
+                    /** @description Maximum price value used by the price filter. */
                     "Price.Value"?: number | string;
+                    /** @description Currency associated with the price filter value. */
                     "Price.Currency"?: components["schemas"]["Currency"];
+                    /** @description Case-insensitive substring filter on the venue name. */
                     VenueName?: string;
+                    /** @description Restricts results to events linked to at least one of the supplied genre names. */
                     GenresNames?: string[];
+                    /** @description Case-insensitive substring filter on any linked artist name. */
                     Artist?: string;
+                    /**
+                     * @description Case-insensitive OR search across the event name, venue name and any linked artist name.
+                     *     This filter is combined with all other filters using AND.
+                     */
+                    Search?: string;
+                    /** @description One-based page number. Values below 1 are clamped to 1. */
                     Page?: number | string;
+                    /** @description Number of items per page. Values outside 1-100 are clamped into that range. Defaults to 10. */
                     PageSize?: number | string;
                 };
                 header?: never;
@@ -116,6 +166,28 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PagedResultOfPublicEventDto"];
+                        "application/json": components["schemas"]["PagedResultOfPublicEventDto"];
+                        "text/json": components["schemas"]["PagedResultOfPublicEventDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -144,6 +216,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Gets the most active cities, genres, artists and venues based on their linked event counts.
+         *     <remarks>This endpoint is `Public`.</remarks>
+         */
         get: {
             parameters: {
                 query?: {
@@ -192,6 +268,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/Events/public/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gets the distinct active-event filter options for cities, venues and genres.
+         *     <remarks>This endpoint is `Public`.</remarks>
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["EventFilterOptionsDto"];
+                        "application/json": components["schemas"]["EventFilterOptionsDto"];
+                        "text/json": components["schemas"]["EventFilterOptionsDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/Events/public/{slug}": {
         parameters: {
             query?: never;
@@ -199,6 +315,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * For retreival of a single Event object using its name.
+         *         <remarks>
+         *         1. This endpoint is Public
+         *     1. This endpoint is Non-Idempotent
+         *         </remarks>
+         */
         get: {
             parameters: {
                 query?: never;
@@ -210,6 +333,17 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PublicEventDto"];
+                        "application/json": components["schemas"]["PublicEventDto"];
+                        "text/json": components["schemas"]["PublicEventDto"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -240,6 +374,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Creates an Event.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         post: {
             parameters: {
                 query?: never;
@@ -255,7 +396,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Created */
+                /** @description The Created Event */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -268,6 +409,7 @@ export interface paths {
                 };
             };
         };
+        /** Deletes an event. <remarks>This endpoint is `Private`</remarks> */
         delete: {
             parameters: {
                 query?: never;
@@ -316,6 +458,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /**
+         * Updates an EVent based on its iD.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         put: {
             parameters: {
                 query?: never;
@@ -333,7 +482,6 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Not Found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -360,6 +508,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Gets a Genre based on its name.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         get: {
             parameters: {
                 query?: never;
@@ -371,6 +526,17 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["GenreSummaryDto"];
+                        "application/json": components["schemas"]["GenreSummaryDto"];
+                        "text/json": components["schemas"]["GenreSummaryDto"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -401,6 +567,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Creates a Genre.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         post: {
             parameters: {
                 query?: never;
@@ -416,7 +589,6 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -442,6 +614,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Gets a Venue based on its name.
+         *         <remarks>
+         *         1. This endpoint is Public
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         get: {
             parameters: {
                 query?: never;
@@ -453,6 +632,17 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PublicVenueDetailedDto"];
+                        "application/json": components["schemas"]["PublicVenueDetailedDto"];
+                        "text/json": components["schemas"]["PublicVenueDetailedDto"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -483,6 +673,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Creates a Venue.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         post: {
             parameters: {
                 query?: never;
@@ -498,7 +695,6 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -525,6 +721,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /**
+         * Updates a Venue based on its ID.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Idempotent
+         *         </remarks>
+         */
         put: {
             parameters: {
                 query?: never;
@@ -542,7 +745,6 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Not Found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -556,6 +758,13 @@ export interface paths {
             };
         };
         post?: never;
+        /**
+         * Deletes a Venue based on its ID.
+         *         <remarks>
+         *         1. This endpoint is Private
+         *     1. This endpoint is Non-Idempotent
+         *         </remarks>
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -567,7 +776,6 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Not Found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -651,6 +859,22 @@ export interface components {
             /** Format: int32 */
             artistId?: null | number | string;
         };
+        EventFilterOptionDto: {
+            name: string;
+            /** Format: int32 */
+            count?: number | string;
+        };
+        EventFilterOptionsDto: {
+            cities?: components["schemas"]["EventFilterOptionDto"][];
+            venues?: components["schemas"]["VenueFilterOptionDto"][];
+            genres?: components["schemas"]["EventFilterOptionDto"][];
+        };
+        EventSummaryDto: {
+            /** Format: date-time */
+            startDate: string;
+            name: string;
+            slug: string;
+        };
         GenreSummaryDto: {
             /** Format: int32 */
             id: number | string;
@@ -669,6 +893,25 @@ export interface components {
             topVenues?: components["schemas"]["MostActiveItemDto"][];
             pagination?: components["schemas"]["PaginationDto"];
         };
+        PagedResultOfPublicEventDto: {
+            /** @description Items in the requested page, ordered deterministically. */
+            items?: components["schemas"]["PublicEventDto"][];
+            /**
+             * Format: int32
+             * @description Total number of items matching the filters before pagination is applied.
+             */
+            totalCount?: number | string;
+            /**
+             * Format: int32
+             * @description One-based page number of this result.
+             */
+            page?: number | string;
+            /**
+             * Format: int32
+             * @description Maximum number of items requested per page, after clamping to 1-100.
+             */
+            pageSize?: number | string;
+        };
         PaginationDto: {
             /** Format: int32 */
             page?: number | string;
@@ -680,7 +923,10 @@ export interface components {
             totalPages?: number | string;
         };
         Price: {
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Price amount used by the price filter.
+             */
             value?: number | string;
             currency?: null | components["schemas"]["Currency"];
         };
@@ -692,11 +938,32 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        PublicArtistDetailedDto: {
+            slug: string;
+            name: string;
+            events?: components["schemas"]["EventSummaryDto"][];
+            genres?: components["schemas"]["GenreSummaryDto"][];
+            /** Format: uri */
+            spotifyProfileUrl?: null | string;
+            /** Format: uri */
+            spotifyImageUrl?: null | string;
+            /** Format: uri */
+            soundcloudProfileUrl?: null | string;
+            /** Format: uri */
+            instagramProfileUrl?: null | string;
+        };
         PublicArtistDto: {
             name: string;
             slug: string;
         };
+        /** @enum {null|string} */
+        PublicCurrency: "EUR" | "RON" | "USD" | "HUF" | null;
         PublicEventDto: {
+            /**
+             * Format: int32
+             * @description Stable event primary key.
+             */
+            id: number | string;
             slug: string;
             name: string;
             /** Format: date-time */
@@ -709,12 +976,26 @@ export interface components {
             ticketUrl?: null | string;
             /** Format: uri */
             posterUrl?: null | string;
-            price?: null | components["schemas"]["Price"];
+            price?: null | components["schemas"]["PublicPriceDto"];
             /** Format: date-time */
             endDate?: null | string;
+            /** @description City of the event venue, when the venue has an address. */
+            city?: null | string;
             venueName: string;
             genresName?: string[];
             artistsSummary?: components["schemas"]["PublicArtistDto"][];
+        };
+        PublicPriceDto: {
+            /** Format: double */
+            value?: number | string;
+            currency?: null | components["schemas"]["PublicCurrency"];
+        };
+        PublicVenueDetailedDto: {
+            /** Format: int32 */
+            id: number | string;
+            name: string;
+            address?: null | components["schemas"]["Address"];
+            events?: components["schemas"]["PublicEventDto"][];
         };
         PublicVenueDto: {
             /** Format: int32 */
@@ -743,6 +1024,12 @@ export interface components {
         UpdateVenueDto: {
             name?: null | string;
             address?: null | string;
+        };
+        VenueFilterOptionDto: {
+            name: string;
+            city?: null | string;
+            /** Format: int32 */
+            count?: number | string;
         };
     };
     responses: never;

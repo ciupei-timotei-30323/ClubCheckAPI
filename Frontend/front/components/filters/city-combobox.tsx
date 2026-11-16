@@ -11,6 +11,7 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 import { Label } from "@/components/ui/label"
+import type { EventFilterOption } from "@/lib/api/main/types"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
 
@@ -18,17 +19,18 @@ import { useFilterNavigation } from "./use-filter-navigation"
 
 type CityComboboxProps = {
   value: string
-  items: string[]
+  items: EventFilterOption[]
 }
 
 export function CityCombobox({ value, items }: CityComboboxProps) {
   const id = useId()
   const { isPending, updateFilters } = useFilterNavigation()
 
-  const options = useMemo(
-    () => (value && !items.includes(value) ? [value, ...items] : items),
-    [items, value]
-  )
+  const options = useMemo(() => {
+    const names = items.map((item) => item.name).filter(Boolean)
+
+    return value && !names.includes(value) ? [value, ...names] : names
+  }, [items, value])
 
   const unavailable = options.length === 0
 

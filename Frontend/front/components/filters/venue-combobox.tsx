@@ -11,25 +11,51 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 import { Label } from "@/components/ui/label"
+import type { VenueFilterOption } from "@/lib/api/main/types"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
 
 import { useFilterNavigation } from "./use-filter-navigation"
 
+type VenueOption = {
+  key: string
+  name: string
+  city: string | null
+}
+
 type VenueComboboxProps = {
   value: string
-  items: string[]
+  items: VenueFilterOption[]
 }
 
 export function VenueCombobox({ value, items }: VenueComboboxProps) {
   const id = useId()
   const { isPending, updateFilters } = useFilterNavigation()
 
-  const options = useMemo(
-    () => (value && !items.includes(value) ? [value, ...items] : items),
-    [items, value]
-  )
+  const options = useMemo(() => {
+    const result: VenueOption[] = []
+    const seen = new Set<string>()
 
+    for (const item of items) {
+      const city = item.city ?? null
+      const key = `${item.name}\u0000${city ?? ""}`
+
+      if (seen.has(key)) {
+        continue
+      }
+
+      seen.add(key)
+      result.push({ key, name: item.name, city })
+    }
+
+    if (value && !result.some((item) => item.name === value)) {
+      result.unshift({ key: `selected:${value}`, name: value, city: null })
+    }
+
+    return result
+  }, [items, value])
+
+  const selected = options.find((item) => item.name === value) ?? null
   const unavailable = options.length === 0
 
   return (
@@ -39,9 +65,23 @@ export function VenueCombobox({ value, items }: VenueComboboxProps) {
       </Label>
       <Combobox
         items={options}
-        value={value || null}
+        value={selected}
         onValueChange={(next) => {
-          updateFilters({ venue: next ?? null })
+          updateFilters({ venue: next?.name ?? null })
+        }}
+        itemToStringLabel={(item) => item.name}
+        isItemEqualToValue={(item, current) => item.key === current.key}
+        filter={(item, query) => {
+          const normalized = query.trim().toLocaleLowerCase("ro-RO")
+
+          if (!normalized) {
+            return true
+          }
+
+          return (
+            item.name.toLocaleLowerCase("ro-RO").includes(normalized) ||
+            (item.city?.toLocaleLowerCase("ro-RO").includes(normalized) ?? false)
+          )
         }}
         autoHighlight
         disabled={unavailable}
@@ -56,14 +96,21 @@ export function VenueCombobox({ value, items }: VenueComboboxProps) {
           showClear
           showTrigger
           aria-busy={isPending}
-          className={cn("w-full sm:w-48", isPending && "opacity-60")}
+          className={cn("w-full sm:w-64", isPending && "opacity-60")}
         />
         <ComboboxContent>
           <ComboboxEmpty>{strings.filters.noVenueResults}</ComboboxEmpty>
           <ComboboxList>
-            {(item: string) => (
-              <ComboboxItem key={item} value={item}>
-                <span className="truncate">{item}</span>
+            {(item: VenueOption) => (
+              <ComboboxItem key={item.key} value={item} className="items-start">
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">{item.name}</span>
+                  {item.city && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {item.city}
+                    </span>
+                  )}
+                </span>
               </ComboboxItem>
             )}
           </ComboboxList>

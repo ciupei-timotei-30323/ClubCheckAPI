@@ -11,9 +11,7 @@ export function toEventsQuery(filters: EventFilters): EventsQuery {
   }
 
   if (filters.q) {
-    // The current API has no OR search across name/artist/venue/genre.
-    // Cross-field search needs a dedicated backend `Search` parameter.
-    query.Name = filters.q
+    query.Search = filters.q
   }
 
   if (filters.city) {

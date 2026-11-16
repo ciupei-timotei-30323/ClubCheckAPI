@@ -1,4 +1,5 @@
-import { fetchFacets, emptyFacets } from "@/lib/api/main/facets"
+import { emptyFacets, fetchFacets } from "@/lib/api/main/facets"
+import type { EventFilterOptions } from "@/lib/api/main/types"
 import type { EventFilters } from "@/lib/events/filters"
 
 import { FilterBar } from "./filter-bar"
@@ -8,9 +9,13 @@ type FilterBarSectionProps = {
 }
 
 export async function FilterBarSection({ filters }: FilterBarSectionProps) {
-  const facetsResult = await fetchFacets()
-  const facets =
-    facetsResult.status === "ok" ? facetsResult.data : emptyFacets()
+  let facets: EventFilterOptions
+
+  try {
+    facets = await fetchFacets()
+  } catch {
+    facets = emptyFacets()
+  }
 
   return <FilterBar filters={filters} facets={facets} />
 }

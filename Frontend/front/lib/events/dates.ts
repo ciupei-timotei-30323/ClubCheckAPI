@@ -57,11 +57,13 @@ export function getWeekendRange(today: string): { from: string; to: string } {
 }
 
 export function toApiStart(dateOnly: string): string {
-  return zonedWallClockToUtc(dateOnly, false)
+  return zonedWallClockToUtc(dateOnly)
 }
 
 export function toApiEnd(dateOnly: string): string {
-  return zonedWallClockToUtc(dateOnly, true)
+  const nextDayStart = toApiStart(addDays(dateOnly, 1))
+
+  return new Date(new Date(nextDayStart).getTime() - 1).toISOString()
 }
 
 export function formatEventDate(isoDate: string): string {
@@ -108,20 +110,12 @@ function formatDateOnlyLabel(value: string): string {
 }
 
 /**
- * Converts a wall-clock date/time in Europe/Bucharest to a UTC ISO string.
- * This avoids relying on the server's local timezone.
+ * Converts midnight at the start of a Bucharest calendar day to a UTC ISO
+ * string. This avoids relying on the server's local timezone and is DST-safe.
  */
-function zonedWallClockToUtc(dateOnly: string, endOfDay: boolean): string {
+function zonedWallClockToUtc(dateOnly: string): string {
   const [year, month, day] = dateOnly.split("-").map(Number)
-  const wallClockAsUtc = Date.UTC(
-    year,
-    month - 1,
-    day,
-    endOfDay ? 23 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 999 : 0
-  )
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0, 0)
 
   let instant =
     wallClockAsUtc - getTimeZoneOffsetMs(new Date(wallClockAsUtc))

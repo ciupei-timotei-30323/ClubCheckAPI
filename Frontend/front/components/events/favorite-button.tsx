@@ -14,7 +14,7 @@ import { useFavorites } from "@/lib/favorites/provider"
 import { strings } from "@/lib/i18n/ro"
 
 type FavoriteButtonProps = {
-  id: string
+  id: number
   className?: string
 }
 

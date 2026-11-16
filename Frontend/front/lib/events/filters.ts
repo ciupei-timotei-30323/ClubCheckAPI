@@ -220,7 +220,7 @@ function normalizeDate(value: string): string {
 }
 
 function parsePage(value: string): number {
-  const page = Number.parseInt(value, 10)
+  const page = Number(value)
 
-  return Number.isFinite(page) && page > 0 ? page : 1
+  return Number.isInteger(page) && page > 0 ? page : 1
 }

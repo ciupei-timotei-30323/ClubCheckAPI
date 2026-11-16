@@ -1,4 +1,5 @@
 import { fetchEvents } from "@/lib/api/main/events"
+import { toInteger } from "@/lib/api/main/normalize"
 import {
   buildPageHref,
   EVENTS_PAGE_SIZE,
@@ -25,13 +26,14 @@ export async function EventResults({ filters }: EventResultsProps) {
   }
 
   const data = result.data
-  const totalCount = data?.totalCount ?? 0
-  const page = data?.page ?? filters.page
-  const pageSize = data?.pageSize ?? EVENTS_PAGE_SIZE
+  const items = data?.items ?? []
+  const totalCount = toInteger(data?.totalCount) ?? 0
+  const page = toInteger(data?.page) ?? filters.page
+  const pageSize = toInteger(data?.pageSize) ?? EVENTS_PAGE_SIZE
   const totalPages = getTotalPages(totalCount, pageSize)
   const displayPage = Math.min(Math.max(page, 1), totalPages)
 
-  if (result.status === "empty" || !data || data.items.length === 0) {
+  if (result.status === "empty" || !data || items.length === 0) {
     const isOutOfRange = totalCount > 0 && page > totalPages
 
     return (
@@ -49,18 +51,16 @@ export async function EventResults({ filters }: EventResultsProps) {
               : strings.states.emptyDescription
           }
           actionHref={
-            isOutOfRange ? buildPageHref(filters, 1) : "/"
+            isOutOfRange
+              ? buildPageHref(filters, totalPages)
+              : "/"
           }
           actionLabel={
-            isOutOfRange ? strings.filters.firstPage : strings.filters.clearAll
+            isOutOfRange ? strings.filters.lastPage : strings.filters.clearAll
           }
         />
         {totalCount > 0 && (
-          <Pager
-            page={displayPage}
-            totalPages={totalPages}
-            filters={filters}
-          />
+          <Pager page={displayPage} totalPages={totalPages} filters={filters} />
         )}
       </>
     )
@@ -69,7 +69,7 @@ export async function EventResults({ filters }: EventResultsProps) {
   return (
     <>
       <ResultsHeader totalCount={totalCount} filters={filters} />
-      <EventGrid events={data.items} />
+      <EventGrid events={items} />
       <Pager page={displayPage} totalPages={totalPages} filters={filters} />
     </>
   )

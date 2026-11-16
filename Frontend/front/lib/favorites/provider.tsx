@@ -7,7 +7,7 @@ import type { FavoritesProvider } from "./types"
 const FavoritesContext = createContext<FavoritesProvider | null>(null)
 
 export function createStubFavoritesProvider(): FavoritesProvider {
-  const favorites = new Set<string>()
+  const favorites = new Set<number>()
 
   return {
     isAuthenticated: false,

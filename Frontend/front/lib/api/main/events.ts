@@ -1,15 +1,16 @@
 import type { EventFilters } from "@/lib/events/filters"
 
 import { apiFetch } from "./client"
+import { toInteger } from "./normalize"
 import { toEventsQuery } from "./query"
 import type { ApiResult } from "./result"
-import type { EventsListResponse } from "./types"
+import type { EventsPage } from "./types"
 
 export async function fetchEvents(
   filters: EventFilters
-): Promise<ApiResult<EventsListResponse>> {
+): Promise<ApiResult<EventsPage>> {
   const params = toQueryParams(toEventsQuery(filters))
-  const result = await apiFetch<EventsListResponse>(
+  const result = await apiFetch<EventsPage>(
     `/Events/public?${params.toString()}`,
     {
       next: { revalidate: 60, tags: ["events"] },
@@ -21,18 +22,20 @@ export async function fetchEvents(
     return result
   }
 
+  const data = result.data
+
   if (
-    !result.data ||
-    !Array.isArray(result.data.items) ||
-    typeof result.data.totalCount !== "number" ||
-    typeof result.data.page !== "number" ||
-    typeof result.data.pageSize !== "number"
+    !data ||
+    !Array.isArray(data.items) ||
+    toInteger(data.totalCount) === null ||
+    toInteger(data.page) === null ||
+    toInteger(data.pageSize) === null
   ) {
     return { status: "error", message: "Invalid events response" }
   }
 
-  if (result.data.items.length === 0) {
-    return { status: "empty", data: result.data }
+  if (data.items.length === 0) {
+    return { status: "empty", data }
   }
 
   return result

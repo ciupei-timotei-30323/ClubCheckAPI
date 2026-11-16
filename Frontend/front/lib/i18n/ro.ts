@@ -17,7 +17,7 @@ export const strings = {
   filters: {
     label: "Filtre",
     searchLabel: "Caută evenimente",
-    searchPlaceholder: "Caută eveniment, artist, locație sau gen",
+    searchPlaceholder: "Caută eveniment, artist sau locație",
     city: "Oraș",
     cityPlaceholder: "Toate orașele",
     venue: "Locație",
@@ -34,6 +34,7 @@ export const strings = {
     clearSearch: "Golește căutarea",
     clearAll: "Șterge toate filtrele",
     firstPage: "Mergi la prima pagină",
+    lastPage: "Mergi la ultima pagină",
     removeFilter: (label: string) => `Elimină filtrul: ${label}`,
     searchChip: (query: string) => `Căutare: „${query}”`,
     cityChip: (city: string) => `Oraș: ${city}`,

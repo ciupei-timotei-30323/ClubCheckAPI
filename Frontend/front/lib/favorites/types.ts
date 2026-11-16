@@ -1,5 +1,5 @@
 export interface FavoritesProvider {
   readonly isAuthenticated: boolean
-  isFavorite(id: string): boolean
-  toggle(id: string): void
+  isFavorite(id: number): boolean
+  toggle(id: number): void
 }

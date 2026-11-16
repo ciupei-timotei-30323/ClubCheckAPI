@@ -3,9 +3,10 @@ import Link from "next/link"
 import { Music2Icon } from "lucide-react"
 
 import { AspectRatio } from "@/components/ui/aspect-ratio"
+import { toInteger } from "@/lib/api/main/normalize"
 import type { PublicEvent } from "@/lib/api/main/types"
 import { formatEventDate } from "@/lib/events/dates"
-import { formatPrice } from "@/lib/events/format"
+import { formatEventLocation, formatPrice } from "@/lib/events/format"
 import { strings } from "@/lib/i18n/ro"
 
 import { FavoriteButton } from "./favorite-button"
@@ -27,10 +28,9 @@ export function EventCard({ event, priority = false }: EventCardProps) {
 
   const price = formatPrice(event.price)
   const date = formatEventDate(event.startDate)
-  const location = event.city
-    ? `${event.city} · ${event.venueName}`
-    : event.venueName
+  const location = formatEventLocation(event.city, event.venueName)
   const posterUrl = isUsablePosterUrl(event.posterUrl) ? event.posterUrl : null
+  const eventId = toInteger(event.id)
 
   return (
     <article className="group relative flex flex-col rounded-md">
@@ -52,6 +52,7 @@ export function EventCard({ event, priority = false }: EventCardProps) {
               fill
               unoptimized
               sizes={POSTER_SIZES}
+              referrerPolicy="no-referrer"
               priority={priority}
               className="object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none"
             />
@@ -85,10 +86,12 @@ export function EventCard({ event, priority = false }: EventCardProps) {
         </div>
       </div>
 
-      <FavoriteButton
-        id={event.slug}
-        className="absolute top-2 right-2 z-30"
-      />
+      {eventId !== null && (
+        <FavoriteButton
+          id={eventId}
+          className="absolute top-2 right-2 z-30"
+        />
+      )}
     </article>
   )
 }
