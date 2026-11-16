@@ -124,10 +124,16 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         IQueryable<Event> query = context.Events.Where(e => e.IsActive);
 
         if (q.StartDate is { } from)
-            query = query.Where(e => e.StartDate >= from);
+        {
+            var rangeStart = from.UtcDateTime;
+            query = query.Where(e => (e.EndDate ?? e.StartDate) >= rangeStart);
+        }
 
         if (q.EndDate is { } to)
-            query = query.Where(e => e.EndDate == null || e.EndDate <= to);
+        {
+            var rangeEnd = to.UtcDateTime;
+            query = query.Where(e => e.StartDate <= rangeEnd);
+        }
 
         if (!string.IsNullOrWhiteSpace(q.Name))
             query = query.Where(e => EF.Functions.ILike(e.Name, $"%{q.Name}%"));

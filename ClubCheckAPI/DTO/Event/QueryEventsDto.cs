@@ -15,14 +15,14 @@ public record QueryEventsDto()
     /// An event matches when its end (or start, when no end is set) is on or after this instant.
     /// Omit for an open-ended start.
     /// </summary>
-    public DateTime? StartDate { get; set; }
+    public DateTimeOffset? StartDate { get; set; }
 
     /// <summary>
     /// Inclusive end of the requested date range as an ISO-8601 instant with offset.
     /// An event matches when its start is on or before this instant.
     /// Omit for an open-ended end.
     /// </summary>
-    public DateTime? EndDate { get; set; }
+    public DateTimeOffset? EndDate { get; set; }
 
     /// <summary>
     /// Case-insensitive substring filter on the event name.
