@@ -33,7 +33,7 @@ public record PublicEventDto()
     public Uri? TicketUrl { get; set; }
     
     public Uri? PosterUrl { get; set; }
-    public Price?  Price { get; set; }
+    public PublicPriceDto? Price { get; set; }
     public DateTime? EndDate { get; set; }
     
     
