@@ -7,6 +7,12 @@ namespace ClubCheckAPI.DTO.Event;
 
 public record PublicEventDto()
 {
+    /// <summary>
+    /// Stable event primary key.
+    /// </summary>
+    [Required]
+    public required int Id { get; set; }
+
     [Required] 
     public required string Slug { get; set; }
     
@@ -32,6 +38,12 @@ public record PublicEventDto()
     
     
     // Connection with other DTO's
+
+    /// <summary>
+    /// City of the event venue, when the venue has an address.
+    /// </summary>
+    [MaxLength(100)]
+    public string? City { get; set; }
     
     [Required]
     public required string VenueName { get; set; }
@@ -44,6 +56,6 @@ public record PublicEventDto()
     public override string ToString()
     {
         return
-            $"{nameof(Slug)}: {Slug}, {nameof(Name)}: {Name}, {nameof(StartDate)}: {StartDate}, {nameof(Description)}: {Description}, {nameof(Organizer)}: {Organizer}, {nameof(AnnouncementUrl)}: {AnnouncementUrl}, {nameof(TicketUrl)}: {TicketUrl}, {nameof(Price)}: {Price}, {nameof(EndDate)}: {EndDate}, {nameof(VenueName)}: {VenueName}, {nameof(GenresName)}: {GenresName}, {nameof(ArtistsSummary)}: {ArtistsSummary}";
+            $"{nameof(Id)}: {Id}, {nameof(Slug)}: {Slug}, {nameof(Name)}: {Name}, {nameof(StartDate)}: {StartDate}, {nameof(Description)}: {Description}, {nameof(Organizer)}: {Organizer}, {nameof(AnnouncementUrl)}: {AnnouncementUrl}, {nameof(TicketUrl)}: {TicketUrl}, {nameof(Price)}: {Price}, {nameof(EndDate)}: {EndDate}, {nameof(City)}: {City}, {nameof(VenueName)}: {VenueName}, {nameof(GenresName)}: {GenresName}, {nameof(ArtistsSummary)}: {ArtistsSummary}";
     }
 }

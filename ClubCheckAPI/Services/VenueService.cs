@@ -84,6 +84,7 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
         Id = v.Id,
         Events = v.Events.Select(e => new PublicEventDto()
         {
+            Id = e.Id,
             AnnouncementUrl = e.AnnouncementUrl,
             ArtistsSummary = e.Artists.Select(a => new PublicArtistDto()
             {
@@ -99,6 +100,7 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
             StartDate = e.StartDate,
             TicketUrl = e.TicketUrl,
             PosterUrl = e.PosterUrl,
+            City = e.Venue.Address?.City,
             VenueName = e.Venue.Name
         }).ToList()
     };

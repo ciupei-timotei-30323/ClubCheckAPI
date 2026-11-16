@@ -16,6 +16,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
     private static readonly Expression<Func<Event, PublicEventDto>> ToPublicDto = e => new PublicEventDto
     {
+        Id = e.Id,
         Slug = e.Slug,
         Name = e.Name,
         StartDate = e.StartDate,
@@ -25,6 +26,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         TicketUrl = e.TicketUrl,
         PosterUrl = e.PosterUrl,
         Price = e.Price,
+        City = e.Venue.Address!.City,
         VenueName = e.Venue.Name,
         GenresName = e.Genres.Select(g => g.Name).ToList(),
         ArtistsSummary = e.Artists
