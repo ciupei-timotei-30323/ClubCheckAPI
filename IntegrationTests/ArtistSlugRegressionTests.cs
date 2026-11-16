@@ -88,6 +88,47 @@ public sealed class ArtistSlugRegressionTests(IntegrationTestWebAppFactory facto
     }
 
     [Fact]
+    public async Task Post_SameArtistWithDiacriticNameVariant_ReturnsOriginalArtistAndCreatesOneRow()
+    {
+        const string firstSlug =
+            "042e3510-71ca-42db-a6c4-3029d11ab8f3|iuly-neamtu|iuly-neamtu|romanian-manele-singer|person|male|ro|romania|iuly-neamtu|manele|manele|discogs";
+
+        var firstResponse = await _httpClient.PostAsJsonAsync("/Artists/private", new
+        {
+            Name = "Iuly Neamțu",
+            Slug = firstSlug,
+            SpotifyProfileUrl = (string?)null,
+            SpotifyImageUrl = (string?)null,
+            SoundcloudProfileUrl = (string?)null,
+            InstagramProfileUrl = (string?)null
+        });
+        var secondResponse = await _httpClient.PostAsJsonAsync("/Artists/private", new
+        {
+            Name = "Iuly Neamtu",
+            Slug = firstSlug,
+            SpotifyProfileUrl = (string?)null,
+            SpotifyImageUrl = (string?)null,
+            SoundcloudProfileUrl = (string?)null,
+            InstagramProfileUrl = (string?)null
+        });
+
+        outputHelper.WriteLine(await firstResponse.Content.ReadAsStringAsync());
+        outputHelper.WriteLine(await secondResponse.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, secondResponse.StatusCode);
+
+        var first = await firstResponse.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+        var second = await secondResponse.Content.ReadFromJsonAsync<ArtistSummaryDto>();
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(first.Id, second.Id);
+        Assert.Equal(first.Slug, second.Slug);
+        Assert.Equal(1, await CountArtistsByUuid(Guid.Parse("042e3510-71ca-42db-a6c4-3029d11ab8f3")));
+    }
+
+    [Fact]
     public async Task Post_SameArtistConcurrently_ReturnsSameArtistAndCreatesOneRow()
     {
         const string name = "Concurrent Idempotent Artist";
@@ -145,5 +186,13 @@ public sealed class ArtistSlugRegressionTests(IntegrationTestWebAppFactory facto
         await using var scope = factory.Services.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ClubCheckAPIContext>();
         return await context.Artists.CountAsync(a => a.Name == name);
+    }
+
+    private async Task<int> CountArtistsByUuid(Guid uuid)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ClubCheckAPIContext>();
+        var uuidPrefix = $"{uuid:D}|";
+        return await context.Artists.CountAsync(a => a.Slug.StartsWith(uuidPrefix));
     }
 }
