@@ -29,6 +29,7 @@ public class VenuesController(IVenueService service, ILogger<VenuesController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/{name}")]
+    [ProducesResponseType(typeof(PublicVenueDetailedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicVenueDetailedDto>> GetVenueByName([FromRoute] string name, CancellationToken ct)
     {

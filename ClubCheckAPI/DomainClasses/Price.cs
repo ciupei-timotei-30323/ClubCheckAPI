@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using ClubCheckAPI.Exceptions;
 using ClubCheckAPI.Models;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,16 @@ namespace ClubCheckAPI.DomainClasses;
 // [ComplexType]
 public  class Price : IComparable<Price>, IEquatable<Price>
 {
+    /// <summary>
+    /// Price amount used by the price filter.
+    /// </summary>
+    [Description("Maximum price value used by the price filter.")]
     [Precision(8, 2)] public decimal Value { get; set; }
+
+    /// <summary>
+    /// Currency associated with the price filter value.
+    /// </summary>
+    [Description("Currency associated with the price filter value.")]
     public Currency? Currency { get; set; }
 
     /// <summary>

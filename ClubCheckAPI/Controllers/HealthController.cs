@@ -19,7 +19,8 @@ public class HealthController(ILogger<HealthController> _logger,
     // }
     
     [HttpGet("health")]
-    public ActionResult GetHealth()
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    public ActionResult<string> GetHealth()
     {
         _logger.LogInformation("Health controller called!");
         
@@ -27,7 +28,9 @@ public class HealthController(ILogger<HealthController> _logger,
     }
 
     [HttpGet("health-db")]
-    public ActionResult GetHealthDb()
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public ActionResult<string> GetHealthDb()
     {
         _logger.LogInformation("Health db controller called!");
         if (_db.Database.CanConnect())

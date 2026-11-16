@@ -1,3 +1,4 @@
+using ClubCheckAPI.DTO;
 using ClubCheckAPI.DTO.Event;
 using Microsoft.AspNetCore.Mvc;
 using ClubCheckAPI.IServices;
@@ -20,8 +21,10 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public")]
+    [ProducesResponseType(typeof(PagedResult<PublicEventDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ICollection<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
+    public async Task<ActionResult<PagedResult<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
     {
         logger.LogInformation("Getting events {query}",  query);
         return Ok(await service.GetEvents(query, ct));
@@ -33,13 +36,26 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/most-active")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MostActiveStatisticsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<MostActiveStatisticsDto>> GetMostActive([FromQuery] MostActiveQueryDto query,
         CancellationToken ct)
     {
         logger.LogInformation("Getting most active event statistics {query}", query);
         return Ok(await service.GetMostActive(query, ct));
+    }
+
+    /// <summary>
+    /// Gets the distinct active-event filter options for cities, venues and genres.
+    /// <remarks>This endpoint is <c>Public</c>.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("public/filters")]
+    [ProducesResponseType(typeof(EventFilterOptionsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<EventFilterOptionsDto>> GetFilterOptions(CancellationToken ct)
+    {
+        logger.LogInformation("Getting public event filter options");
+        return Ok(await service.GetFilterOptions(ct));
     }
 
     /// <summary>
@@ -53,6 +69,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/{slug}")]
+    [ProducesResponseType(typeof(PublicEventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string slug, CancellationToken ct)
     {

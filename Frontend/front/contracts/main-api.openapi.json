@@ -4,17 +4,13 @@
     "title": "ClubCheckAPI | v1",
     "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "http://localhost:30021/"
-    }
-  ],
   "paths": {
     "/Artists/public/{slug}": {
       "get": {
         "tags": [
           "Artists"
         ],
+        "summary": "fetches detailed information about an artist based on its name. <remarks>This endpoint is `Public`</remarks>",
         "parameters": [
           {
             "name": "slug",
@@ -26,6 +22,26 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicArtistDetailedDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicArtistDetailedDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicArtistDetailedDto"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -54,6 +70,7 @@
         "tags": [
           "Artists"
         ],
+        "summary": "    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "requestBody": {
           "content": {
             "application/json": {
@@ -76,7 +93,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -103,10 +120,12 @@
         "tags": [
           "Events"
         ],
+        "summary": "    FOr batch retrieval of Events based on a query.\n    <remarks>\n    1. This endpoint is Public\n1. This endpoint is Non-Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "IsActive",
             "in": "query",
+            "description": "Optional active-state filter.",
             "schema": {
               "type": "boolean"
             }
@@ -114,6 +133,7 @@
           {
             "name": "StartDate",
             "in": "query",
+            "description": "Inclusive start of the requested date range as an ISO-8601 instant with offset.\nAn event matches when its end (or start, when no end is set) is on or after this instant.\nOmit for an open-ended start.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -122,6 +142,7 @@
           {
             "name": "EndDate",
             "in": "query",
+            "description": "Inclusive end of the requested date range as an ISO-8601 instant with offset.\nAn event matches when its start is on or before this instant.\nOmit for an open-ended end.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -130,6 +151,7 @@
           {
             "name": "Name",
             "in": "query",
+            "description": "Case-insensitive substring filter on the event name.",
             "schema": {
               "type": "string"
             }
@@ -137,6 +159,7 @@
           {
             "name": "Organizer",
             "in": "query",
+            "description": "Case-insensitive substring filter on the organizer.",
             "schema": {
               "type": "string"
             }
@@ -144,6 +167,7 @@
           {
             "name": "City",
             "in": "query",
+            "description": "Case-insensitive substring filter on the venue city.",
             "schema": {
               "type": "string"
             }
@@ -151,6 +175,7 @@
           {
             "name": "Price.Value",
             "in": "query",
+            "description": "Maximum price value used by the price filter.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
               "type": [
@@ -163,6 +188,7 @@
           {
             "name": "Price.Currency",
             "in": "query",
+            "description": "Currency associated with the price filter value.",
             "schema": {
               "$ref": "#/components/schemas/Currency"
             }
@@ -170,6 +196,7 @@
           {
             "name": "VenueName",
             "in": "query",
+            "description": "Case-insensitive substring filter on the venue name.",
             "schema": {
               "type": "string"
             }
@@ -177,6 +204,7 @@
           {
             "name": "GenresNames",
             "in": "query",
+            "description": "Restricts results to events linked to at least one of the supplied genre names.",
             "schema": {
               "type": "array",
               "items": {
@@ -187,6 +215,15 @@
           {
             "name": "Artist",
             "in": "query",
+            "description": "Case-insensitive substring filter on any linked artist name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "description": "Case-insensitive OR search across the event name, venue name and any linked artist name.\nThis filter is combined with all other filters using AND.",
             "schema": {
               "type": "string"
             }
@@ -194,6 +231,7 @@
           {
             "name": "Page",
             "in": "query",
+            "description": "One-based page number. Values below 1 are clamped to 1.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -206,6 +244,7 @@
           {
             "name": "PageSize",
             "in": "query",
+            "description": "Number of items per page. Values outside 1-100 are clamped into that range. Defaults to 10.",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
@@ -217,6 +256,46 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPublicEventDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPublicEventDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPublicEventDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -245,6 +324,7 @@
         "tags": [
           "Events"
         ],
+        "summary": "Gets the most active cities, genres, artists and venues based on their linked event counts.\n<remarks>This endpoint is `Public`.</remarks>",
         "parameters": [
           {
             "name": "TopGenresLimit",
@@ -375,11 +455,42 @@
         }
       }
     },
+    "/Events/public/filters": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Gets the distinct active-event filter options for cities, venues and genres.\n<remarks>This endpoint is `Public`.</remarks>",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventFilterOptionsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventFilterOptionsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventFilterOptionsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/Events/public/{slug}": {
       "get": {
         "tags": [
           "Events"
         ],
+        "summary": "    For retreival of a single Event object using its name.\n    <remarks>\n    1. This endpoint is Public\n1. This endpoint is Non-Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "slug",
@@ -391,6 +502,26 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEventDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEventDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEventDto"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -419,6 +550,7 @@
         "tags": [
           "Events"
         ],
+        "summary": "    Creates an Event.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "requestBody": {
           "content": {
             "application/json": {
@@ -441,7 +573,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created",
+            "description": "The Created Event",
             "content": {
               "text/plain": {
                 "schema": {
@@ -466,6 +598,7 @@
         "tags": [
           "Events"
         ],
+        "summary": "Deletes an event. <remarks>This endpoint is `Private`</remarks>",
         "requestBody": {
           "content": {
             "application/json": {
@@ -518,6 +651,7 @@
         "tags": [
           "Events"
         ],
+        "summary": "    Updates an EVent based on its iD.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "id",
@@ -555,7 +689,7 @@
         },
         "responses": {
           "404": {
-            "description": "Not Found",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -582,6 +716,7 @@
         "tags": [
           "Genres"
         ],
+        "summary": "    Gets a Genre based on its name.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "name",
@@ -593,6 +728,26 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenreSummaryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenreSummaryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenreSummaryDto"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -621,6 +776,7 @@
         "tags": [
           "Genres"
         ],
+        "summary": "    Creates a Genre.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "requestBody": {
           "content": {
             "application/json": {
@@ -643,7 +799,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -670,6 +826,7 @@
         "tags": [
           "Venues"
         ],
+        "summary": "    Gets a Venue based on its name.\n    <remarks>\n    1. This endpoint is Public\n1. This endpoint is Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "name",
@@ -681,6 +838,26 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVenueDetailedDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVenueDetailedDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVenueDetailedDto"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -709,6 +886,7 @@
         "tags": [
           "Venues"
         ],
+        "summary": "    Creates a Venue.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "requestBody": {
           "content": {
             "application/json": {
@@ -731,7 +909,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -758,6 +936,7 @@
         "tags": [
           "Venues"
         ],
+        "summary": "    Updates a Venue based on its ID.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "id",
@@ -795,7 +974,7 @@
         },
         "responses": {
           "404": {
-            "description": "Not Found",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -820,6 +999,7 @@
         "tags": [
           "Venues"
         ],
+        "summary": "    Deletes a Venue based on its ID.\n    <remarks>\n    1. This endpoint is Private\n1. This endpoint is Non-Idempotent\n    </remarks>",
         "parameters": [
           {
             "name": "id",
@@ -837,7 +1017,7 @@
         ],
         "responses": {
           "404": {
-            "description": "Not Found",
+            "description": "",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1146,6 +1326,68 @@
           }
         }
       },
+      "EventFilterOptionDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "EventFilterOptionsDto": {
+        "type": "object",
+        "properties": {
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventFilterOptionDto"
+            }
+          },
+          "venues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueFilterOptionDto"
+            }
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventFilterOptionDto"
+            }
+          }
+        }
+      },
+      "EventSummaryDto": {
+        "required": [
+          "startDate",
+          "name",
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
       "GenreSummaryDto": {
         "required": [
           "id",
@@ -1222,6 +1464,45 @@
           }
         }
       },
+      "PagedResultOfPublicEventDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicEventDto"
+            },
+            "description": "Items in the requested page, ordered deterministically."
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Total number of items matching the filters before pagination is applied.",
+            "format": "int32"
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "One-based page number of this result.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Maximum number of items requested per page, after clamping to 1-100.",
+            "format": "int32"
+          }
+        }
+      },
       "PaginationDto": {
         "type": "object",
         "properties": {
@@ -1268,6 +1549,7 @@
               "number",
               "string"
             ],
+            "description": "Price amount used by the price filter.",
             "format": "double"
           },
           "currency": {
@@ -1276,6 +1558,7 @@
                 "type": "null"
               },
               {
+                "description": "Currency associated with the price filter value.",
                 "$ref": "#/components/schemas/Currency"
               }
             ]
@@ -1320,6 +1603,62 @@
           }
         }
       },
+      "PublicArtistDetailedDto": {
+        "required": [
+          "slug",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 150,
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummaryDto"
+            }
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenreSummaryDto"
+            }
+          },
+          "spotifyProfileUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "spotifyImageUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "soundcloudProfileUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "instagramProfileUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          }
+        }
+      },
       "PublicArtistDto": {
         "required": [
           "name",
@@ -1337,8 +1676,22 @@
           }
         }
       },
+      "PublicCurrency": {
+        "enum": [
+          "EUR",
+          "RON",
+          "USD",
+          "HUF",
+          null
+        ],
+        "type": [
+          "null",
+          "string"
+        ]
+      },
       "PublicEventDto": {
         "required": [
+          "id",
           "slug",
           "name",
           "startDate",
@@ -1346,6 +1699,15 @@
         ],
         "type": "object",
         "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Stable event primary key.",
+            "format": "int32"
+          },
           "slug": {
             "type": "string"
           },
@@ -1398,7 +1760,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/Price"
+                "$ref": "#/components/schemas/PublicPriceDto"
               }
             ]
           },
@@ -1408,6 +1770,14 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "city": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "City of the event venue, when the venue has an address."
           },
           "venueName": {
             "type": "string"
@@ -1422,6 +1792,66 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicArtistDto"
+            }
+          }
+        }
+      },
+      "PublicPriceDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicCurrency"
+              }
+            ]
+          }
+        }
+      },
+      "PublicVenueDetailedDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Address"
+              }
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicEventDto"
             }
           }
         }
@@ -1558,6 +1988,31 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "VenueFilterOptionDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       }

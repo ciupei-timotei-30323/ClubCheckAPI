@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using ClubCheckAPI.DTO;
 using ClubCheckAPI.DTO.Artist;
 using ClubCheckAPI.DTO.Event;
 using ClubCheckAPI.Exceptions;
@@ -15,6 +16,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
 
     private static readonly Expression<Func<Event, PublicEventDto>> ToPublicDto = e => new PublicEventDto
     {
+        Id = e.Id,
         Slug = e.Slug,
         Name = e.Name,
         StartDate = e.StartDate,
@@ -23,7 +25,10 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         AnnouncementUrl = e.AnnouncementUrl,
         TicketUrl = e.TicketUrl,
         PosterUrl = e.PosterUrl,
-        Price = e.Price,
+        Price = e.Price == null
+            ? null
+            : new PublicPriceDto { Value = e.Price.Value, Currency = (PublicCurrency?)e.Price.Currency },
+        City = e.Venue.Address!.City,
         VenueName = e.Venue.Name,
         GenresName = e.Genres.Select(g => g.Name).ToList(),
         ArtistsSummary = e.Artists
@@ -111,7 +116,7 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         };
     }
 
-    public async Task<ICollection<PublicEventDto>> GetEvents(QueryEventsDto q, CancellationToken ct)
+    public async Task<PagedResult<PublicEventDto>> GetEvents(QueryEventsDto q, CancellationToken ct)
     {
         var page = Math.Max(q.Page, 1);
         var pageSize = Math.Clamp(q.PageSize, 1, 100);
@@ -119,10 +124,16 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         IQueryable<Event> query = context.Events.Where(e => e.IsActive);
 
         if (q.StartDate is { } from)
-            query = query.Where(e => e.StartDate >= from);
+        {
+            var rangeStart = from.UtcDateTime;
+            query = query.Where(e => (e.EndDate ?? e.StartDate) >= rangeStart);
+        }
 
         if (q.EndDate is { } to)
-            query = query.Where(e => e.EndDate == null || e.EndDate <= to);
+        {
+            var rangeEnd = to.UtcDateTime;
+            query = query.Where(e => e.StartDate <= rangeEnd);
+        }
 
         if (!string.IsNullOrWhiteSpace(q.Name))
             query = query.Where(e => EF.Functions.ILike(e.Name, $"%{q.Name}%"));
@@ -152,6 +163,17 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         if (!string.IsNullOrWhiteSpace(q.Artist))
             query = query.Where(e => e.Artists.Any(a => EF.Functions.ILike(a.Name, $"%{q.Artist}%")));
 
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            var searchPattern = $"%{q.Search}%";
+            query = query.Where(e =>
+                EF.Functions.ILike(e.Name, searchPattern) ||
+                EF.Functions.ILike(e.Venue.Name, searchPattern) ||
+                e.Artists.Any(a => EF.Functions.ILike(a.Name, searchPattern)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+
         var items = await query
             .OrderBy(e => e.StartDate)
             .ThenBy(e => e.Id)
@@ -160,7 +182,56 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
             .Select(ToPublicDto)
             .ToListAsync(ct);
 
-        return items;
+        return new PagedResult<PublicEventDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<EventFilterOptionsDto> GetFilterOptions(CancellationToken ct)
+    {
+        var activeEvents = context.Events.AsNoTracking().Where(e => e.IsActive);
+
+        var cities = await activeEvents
+            .Where(e => e.Venue.Address!.City != null &&
+                        e.Venue.Address.City != "" &&
+                        e.Venue.Address.City != "-")
+            .GroupBy(e => e.Venue.Address!.City)
+            .Select(g => new EventFilterOptionDto { Name = g.Key, Count = g.Count() })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ToListAsync(ct);
+
+        var venues = await activeEvents
+            .GroupBy(e => new { e.Venue.Name, City = e.Venue.Address!.City })
+            .Select(g => new VenueFilterOptionDto
+            {
+                Name = g.Key.Name,
+                City = g.Key.City,
+                Count = g.Count()
+            })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ThenBy(option => option.City)
+            .ToListAsync(ct);
+
+        var genres = await activeEvents
+            .SelectMany(e => e.Genres)
+            .GroupBy(g => new { g.Id, g.Name })
+            .Select(g => new EventFilterOptionDto { Name = g.Key.Name, Count = g.Count() })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ToListAsync(ct);
+
+        return new EventFilterOptionsDto
+        {
+            Cities = cities,
+            Venues = venues,
+            Genres = genres
+        };
     }
 
     public async Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct)
