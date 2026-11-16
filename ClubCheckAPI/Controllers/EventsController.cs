@@ -46,6 +46,19 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     }
 
     /// <summary>
+    /// Gets the distinct active-event filter options for cities, venues and genres.
+    /// <remarks>This endpoint is <c>Public</c>.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("public/filters")]
+    [ProducesResponseType(typeof(EventFilterOptionsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<EventFilterOptionsDto>> GetFilterOptions(CancellationToken ct)
+    {
+        logger.LogInformation("Getting public event filter options");
+        return Ok(await service.GetFilterOptions(ct));
+    }
+
+    /// <summary>
     /// For retreival of a single Event object using its name.
     /// <remarks>
     /// <list type="number">

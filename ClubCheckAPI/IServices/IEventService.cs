@@ -9,6 +9,8 @@ public interface IEventService
 
     public Task<PagedResult<PublicEventDto>> GetEvents(QueryEventsDto queryDto, CancellationToken ct);
 
+    public Task<EventFilterOptionsDto> GetFilterOptions(CancellationToken ct);
+
     public Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct);
 
     public Task<PublicEventDto> CreateEvent(CreateEventDto eventDto, CancellationToken ct);

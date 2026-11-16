@@ -104,6 +104,31 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
     }
 
     [Fact]
+    public async Task Get_PublicEventFilters_ReturnsActiveEventOptions()
+    {
+        await SeedContractData();
+
+        var response = await _httpClientNotAuth.GetAsync("/Events/public/filters");
+        var result = await response.Content.ReadFromJsonAsync<EventFilterOptionsDto>();
+
+        outputHelper.WriteLine(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(result);
+
+        Assert.Equal(["Cluj-Napoca", "Bucharest"], result.Cities.Select(city => city.Name));
+        Assert.Equal(8, result.Cities.First().Count);
+
+        Assert.Equal("Contract Venue Cluj", result.Venues.First().Name);
+        Assert.Equal("Cluj-Napoca", result.Venues.First().City);
+        Assert.Equal(8, result.Venues.First().Count);
+
+        Assert.Equal(["Contract House", "Contract Techno"], result.Genres.Select(genre => genre.Name));
+        Assert.Equal(3, result.Genres.First().Count);
+        Assert.Equal(2, result.Genres.Skip(1).First().Count);
+    }
+
+    [Fact]
     public async Task Get_PublicEvents_DateRangeUsesInclusiveOverlapAndSupportsOpenEnds()
     {
         await SeedContractData();
@@ -208,7 +233,11 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
             Address = new Address("010001", "20", "Contract Street", "Bucharest")
         };
 
+        var house = new Genre { Name = "Contract House" };
+        var techno = new Genre { Name = "Contract Techno" };
+
         context.Venues.AddRange(clujVenue, bucharestVenue);
+        context.Genre.AddRange(house, techno);
         await context.SaveChangesAsync();
 
         var sharedStartDate = new DateTime(2030, 4, 1, 18, 0, 0, DateTimeKind.Utc);
@@ -227,7 +256,8 @@ public sealed class PublicEventsContractTests(IntegrationTestWebAppFactory facto
                     3 => new Price(75, Currency.EUR),
                     4 => new Price(100, Currency.USD),
                     _ => null
-                }
+                },
+                Genres = index <= 3 ? [house] : [techno]
             })
             .ToList();
 

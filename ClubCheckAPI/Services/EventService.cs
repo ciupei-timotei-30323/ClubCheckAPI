@@ -182,6 +182,49 @@ public class EventService(ILogger<EventService> logger, ClubCheckAPIContext cont
         };
     }
 
+    public async Task<EventFilterOptionsDto> GetFilterOptions(CancellationToken ct)
+    {
+        var activeEvents = context.Events.AsNoTracking().Where(e => e.IsActive);
+
+        var cities = await activeEvents
+            .Where(e => e.Venue.Address!.City != null &&
+                        e.Venue.Address.City != "" &&
+                        e.Venue.Address.City != "-")
+            .GroupBy(e => e.Venue.Address!.City)
+            .Select(g => new EventFilterOptionDto { Name = g.Key, Count = g.Count() })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ToListAsync(ct);
+
+        var venues = await activeEvents
+            .GroupBy(e => new { e.Venue.Name, City = e.Venue.Address!.City })
+            .Select(g => new VenueFilterOptionDto
+            {
+                Name = g.Key.Name,
+                City = g.Key.City,
+                Count = g.Count()
+            })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ThenBy(option => option.City)
+            .ToListAsync(ct);
+
+        var genres = await activeEvents
+            .SelectMany(e => e.Genres)
+            .GroupBy(g => new { g.Id, g.Name })
+            .Select(g => new EventFilterOptionDto { Name = g.Key.Name, Count = g.Count() })
+            .OrderByDescending(option => option.Count)
+            .ThenBy(option => option.Name)
+            .ToListAsync(ct);
+
+        return new EventFilterOptionsDto
+        {
+            Cities = cities,
+            Venues = venues,
+            Genres = genres
+        };
+    }
+
     public async Task<PublicEventDto> GetEventBySlug(string slug, CancellationToken ct)
     {
         var existingEvent = await context.Events.Where(e => e.Slug == slug).Select(ToPublicDto)
