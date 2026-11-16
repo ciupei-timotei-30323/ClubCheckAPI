@@ -13,6 +13,7 @@ public class ArtistsController(IArtistService service, ILogger<ArtistsController
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/{slug}")]
+    [ProducesResponseType(typeof(PublicArtistDetailedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicArtistDetailedDto>> GetBySlug([FromRoute] string slug, CancellationToken ct)
     {

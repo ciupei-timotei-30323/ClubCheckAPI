@@ -20,6 +20,8 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public")]
+    [ProducesResponseType(typeof(ICollection<PublicEventDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ICollection<PublicEventDto>>> GetEvents([FromQuery] QueryEventsDto query, CancellationToken ct)
     {
@@ -33,7 +35,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/most-active")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MostActiveStatisticsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<MostActiveStatisticsDto>> GetMostActive([FromQuery] MostActiveQueryDto query,
         CancellationToken ct)
@@ -53,6 +55,7 @@ public class EventsController(IEventService service, ILogger<EventsController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/{slug}")]
+    [ProducesResponseType(typeof(PublicEventDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PublicEventDto>> GetEvent([FromRoute] string slug, CancellationToken ct)
     {

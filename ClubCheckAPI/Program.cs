@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ClubCheckAPI.Models;
 using ClubCheckAPI.Services;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -60,7 +61,15 @@ try
 
     builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi(options =>
+    {
+        // The document is consumed by clients in multiple environments, so no single server URL is authoritative.
+        options.AddDocumentTransformer((document, _, _) =>
+        {
+            document.Servers = [];
+            return Task.CompletedTask;
+        });
+    });
 
     builder.Services.AddScoped<IGenreService, GenreService>();
     builder.Services.AddScoped<IArtistService, ArtistService>();

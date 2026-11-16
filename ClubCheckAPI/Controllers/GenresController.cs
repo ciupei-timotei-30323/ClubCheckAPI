@@ -22,6 +22,7 @@ public class GenresController(IGenreService service, ILogger<GenresController> l
     /// </summary>
     /// <returns></returns>
     [HttpGet("public/{name}")]
+    [ProducesResponseType(typeof(GenreSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GenreSummaryDto>> GetGenre([FromRoute] string name, CancellationToken ct)
     {
