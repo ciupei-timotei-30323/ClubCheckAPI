@@ -57,28 +57,78 @@ export function getWeekendRange(today: string): { from: string; to: string } {
 }
 
 export function toApiStart(dateOnly: string): string {
-  return zonedWallClockToUtc(dateOnly, false)
+  return zonedWallClockToUtc(dateOnly)
 }
 
 export function toApiEnd(dateOnly: string): string {
-  return zonedWallClockToUtc(dateOnly, true)
+  const nextDayStart = toApiStart(addDays(dateOnly, 1))
+
+  return new Date(new Date(nextDayStart).getTime() - 1).toISOString()
 }
 
-export function formatEventDate(isoDate: string): string {
-  const date = new Date(isoDate)
+const EVENT_DATE_FORMATTER = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+})
 
-  if (Number.isNaN(date.getTime())) {
+const EVENT_CARD_DATE_FORMATTER = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+})
+
+export function formatEventDate(isoDate: string): string {
+  const date = parseInstant(isoDate)
+
+  return date ? EVENT_CARD_DATE_FORMATTER.format(date) : ""
+}
+
+export function formatEventRange(
+  startIso: string,
+  endIso?: string | null
+): string {
+  const start = parseInstant(startIso)
+
+  if (!start) {
     return ""
   }
 
-  return new Intl.DateTimeFormat(LOCALE, {
-    timeZone: TIME_ZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  const end = parseInstant(endIso)
+
+  if (!end || end.getTime() < start.getTime()) {
+    return EVENT_DATE_FORMATTER.format(start)
+  }
+
+  return EVENT_DATE_FORMATTER.formatRange(start, end)
+}
+
+export function isEventEnded(
+  startDate: string,
+  endDate: string | null | undefined,
+  now: Date = new Date()
+): boolean {
+  // The API treats an event without an end date as ending at its start.
+  const end = parseInstant(endDate) ?? parseInstant(startDate)
+
+  return end !== null && end.getTime() < now.getTime()
+}
+
+function parseInstant(value: string | null | undefined): Date | null {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 export function formatDateRange(from: string, to: string): string {
@@ -108,20 +158,12 @@ function formatDateOnlyLabel(value: string): string {
 }
 
 /**
- * Converts a wall-clock date/time in Europe/Bucharest to a UTC ISO string.
- * This avoids relying on the server's local timezone.
+ * Converts midnight at the start of a Bucharest calendar day to a UTC ISO
+ * string. This avoids relying on the server's local timezone and is DST-safe.
  */
-function zonedWallClockToUtc(dateOnly: string, endOfDay: boolean): string {
+function zonedWallClockToUtc(dateOnly: string): string {
   const [year, month, day] = dateOnly.split("-").map(Number)
-  const wallClockAsUtc = Date.UTC(
-    year,
-    month - 1,
-    day,
-    endOfDay ? 23 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 59 : 0,
-    endOfDay ? 999 : 0
-  )
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0, 0)
 
   let instant =
     wallClockAsUtc - getTimeZoneOffsetMs(new Date(wallClockAsUtc))

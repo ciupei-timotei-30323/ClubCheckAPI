@@ -29,7 +29,9 @@ export function SearchInput() {
   const searchParams = useSearchParams()
   const urlQuery = searchParams.get("q") ?? ""
   const [value, setValue] = useState(urlQuery)
-  const { isPending, updateFilters } = useFilterNavigation()
+  const { isPending, updateFilters } = useFilterNavigation({
+    basePath: "/",
+  })
 
   useEffect(() => {
     if (document.activeElement === inputRef.current) {

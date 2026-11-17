@@ -7,6 +7,9 @@ export const strings = {
     description:
       "Descoperă concerte, festivaluri și spectacole. Filtrează după oraș, locație, gen și dată.",
     heading: "Descoperă evenimente",
+    siteName: "ClubCheck",
+    eventTitle: (name: string, city: string) => `${name} – ${city} | ClubCheck`,
+    eventTitleWithoutCity: (name: string) => `${name} | ClubCheck`,
   },
   header: {
     homeLabel: "ClubCheck — pagina principală",
@@ -17,7 +20,7 @@ export const strings = {
   filters: {
     label: "Filtre",
     searchLabel: "Caută evenimente",
-    searchPlaceholder: "Caută eveniment, artist, locație sau gen",
+    searchPlaceholder: "Caută eveniment, artist sau locație",
     city: "Oraș",
     cityPlaceholder: "Toate orașele",
     venue: "Locație",
@@ -34,6 +37,7 @@ export const strings = {
     clearSearch: "Golește căutarea",
     clearAll: "Șterge toate filtrele",
     firstPage: "Mergi la prima pagină",
+    lastPage: "Mergi la ultima pagină",
     removeFilter: (label: string) => `Elimină filtrul: ${label}`,
     searchChip: (query: string) => `Căutare: „${query}”`,
     cityChip: (city: string) => `Oraș: ${city}`,
@@ -59,6 +63,25 @@ export const strings = {
     errorTitle: "Evenimentele nu au putut fi încărcate",
     errorDescription: "A apărut o problemă la conectarea cu serverul. Încearcă din nou.",
     retry: "Reîncearcă",
+  },
+  detail: {
+    breadcrumb: "Evenimente",
+    when: "Când",
+    where: "Unde",
+    who: "Cine",
+    price: "Preț",
+    buyTickets: "Cumpără bilete",
+    about: "Despre eveniment",
+    organizer: "Organizator",
+    ended: "Eveniment încheiat",
+    related: (venue: string) => `Alte evenimente la ${venue}`,
+    notFoundTitle: "Evenimentul nu a fost găsit",
+    notFoundDescription:
+      "Evenimentul căutat nu există sau a fost eliminat.",
+    backToListing: "Înapoi la evenimente",
+    errorTitle: "Evenimentul nu a putut fi încărcat",
+    errorDescription:
+      "A apărut o problemă la conectarea cu serverul. Încearcă din nou.",
   },
   card: {
     posterAlt: (name: string) => `Afișul evenimentului ${name}`,

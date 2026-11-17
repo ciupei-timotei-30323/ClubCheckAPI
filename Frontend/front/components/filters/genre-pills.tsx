@@ -3,6 +3,8 @@
 import { useMemo } from "react"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { toInteger } from "@/lib/api/main/normalize"
+import type { EventFilterOption } from "@/lib/api/main/types"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
 
@@ -12,14 +14,25 @@ const MAX_VISIBLE_GENRES = 8
 
 type GenrePillsProps = {
   value: string[]
-  items: string[]
+  items: EventFilterOption[]
 }
 
 export function GenrePills({ value, items }: GenrePillsProps) {
   const { isPending, updateFilters } = useFilterNavigation()
 
   const options = useMemo(() => {
-    const visible = items.slice(0, MAX_VISIBLE_GENRES)
+    const orderedNames = [...items]
+      .sort((a, b) => {
+        const countDifference = (toInteger(b.count) ?? 0) - (toInteger(a.count) ?? 0)
+
+        return countDifference !== 0
+          ? countDifference
+          : a.name.localeCompare(b.name, "ro")
+      })
+      .map((item) => item.name)
+      .filter(Boolean)
+
+    const visible = orderedNames.slice(0, MAX_VISIBLE_GENRES)
     const selectedButHidden = value.filter((genre) => !visible.includes(genre))
 
     return [...selectedButHidden, ...visible]

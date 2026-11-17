@@ -10,6 +10,7 @@ type EmptyStateProps = {
   description?: string
   actionHref?: string
   actionLabel?: string
+  headingLevel?: "h1" | "h2"
 }
 
 export function EmptyState({
@@ -17,6 +18,7 @@ export function EmptyState({
   description = strings.states.emptyDescription,
   actionHref = "/",
   actionLabel = strings.filters.clearAll,
+  headingLevel: Heading = "h2",
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border px-6 py-16 text-center">
@@ -25,7 +27,7 @@ export function EmptyState({
         aria-hidden="true"
       />
       <div className="space-y-1">
-        <h2 className="font-medium">{title}</h2>
+        <Heading className="font-medium">{title}</Heading>
         <p className="max-w-md text-sm text-muted-foreground">{description}</p>
       </div>
       <Link

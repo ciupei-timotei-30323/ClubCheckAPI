@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation"
 import { RefreshCwIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { retryEvents } from "@/lib/events/actions"
 import { strings } from "@/lib/i18n/ro"
 
-export function RetryButton() {
+type RetryButtonProps = {
+  onRetry?: () => void
+}
+
+export function RetryButton({ onRetry }: RetryButtonProps = {}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const retry = () => {
-    startTransition(async () => {
-      try {
-        await retryEvents()
-      } finally {
-        router.refresh()
-      }
+    startTransition(() => {
+      onRetry?.()
+      router.refresh()
     })
   }
 

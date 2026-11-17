@@ -12,9 +12,14 @@ type UpdateOptions = {
   scroll?: boolean
 }
 
-export function useFilterNavigation() {
+type FilterNavigationOptions = {
+  basePath?: string
+}
+
+export function useFilterNavigation(options: FilterNavigationOptions = {}) {
   const router = useRouter()
   const pathname = usePathname()
+  const targetPath = options.basePath ?? pathname
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
@@ -42,7 +47,7 @@ export function useFilterNavigation() {
       params.delete("page")
 
       const query = params.toString()
-      const href = query ? `${pathname}?${query}` : pathname
+      const href = query ? `${targetPath}?${query}` : targetPath
 
       startTransition(() => {
         if (options.replace) {
@@ -53,7 +58,7 @@ export function useFilterNavigation() {
         router.push(href, { scroll: options.scroll ?? false })
       })
     },
-    [pathname, router, searchParams]
+    [router, searchParams, targetPath]
   )
 
   const setPage = useCallback(
@@ -67,13 +72,13 @@ export function useFilterNavigation() {
       }
 
       const query = params.toString()
-      const href = query ? `${pathname}?${query}` : pathname
+      const href = query ? `${targetPath}?${query}` : targetPath
 
       startTransition(() => {
         router.push(href, { scroll: true })
       })
     },
-    [pathname, router, searchParams]
+    [router, searchParams, targetPath]
   )
 
   return { isPending, updateFilters, setPage }
