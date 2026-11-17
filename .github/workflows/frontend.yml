@@ -1,0 +1,157 @@
+# Required repository configuration:
+#   Variables: NEXT_PUBLIC_SITE_URL (public frontend origin used for canonical/OG URLs)
+#   Secrets:   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID (Azure OIDC)
+# Optional repository variables:
+#   MAIN_API_BASE_URL        (defaults to the deployed ClubCheck API)
+#   AZURE_CONTAINER_APP_NAME (defaults to clubcheck-frontend)
+#
+# The Azure Container App must be able to pull the private/public GHCR image.
+
+name: FrontendTestBuildAndDeploy
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*.*.*"]
+    paths:
+      - "Frontend/front/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "Frontend/front/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-frontend
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: Frontend/front
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: Frontend/front/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run lint
+        run: npm run lint
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.img.outputs.name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure NEXT_PUBLIC_SITE_URL is configured
+        if: github.event_name != 'pull_request'
+        env:
+          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+        run: |
+          if [ -z "$SITE_URL" ]; then
+            echo "::error::Set the repository variable NEXT_PUBLIC_SITE_URL before deploying."
+            exit 1
+          fi
+
+      - name: Compute lowercase image repository
+        id: image
+        run: echo "repository=${REGISTRY}/${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: Frontend/front
+          file: Frontend/front/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Export image reference
+        id: img
+        if: github.event_name != 'pull_request'
+        run: echo "name=${{ steps.image.outputs.repository }}@${{ steps.build-and-push.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy new image to Container App
+        env:
+          AZURE_CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP_NAME || 'clubcheck-frontend' }}
+          MAIN_API_BASE_URL: ${{ vars.MAIN_API_BASE_URL || 'https://clubcheck-api.whiteflower-b7c64b18.italynorth.azurecontainerapps.io' }}
+        run: |
+          az containerapp update \
+            --name "$AZURE_CONTAINER_APP" \
+            --resource-group ClubCheck \
+            --image "${{ needs.build.outputs.image }}" \
+            --set-env-vars "MAIN_API_BASE_URL=$MAIN_API_BASE_URL"
