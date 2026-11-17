@@ -83,3 +83,14 @@
     ports:
       - "5433:5432"  
 
+  front:
+    image: clubcheck-frontend:latest
+    build:
+      context: ./Frontend/front
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - NEXT_TELEMETRY_DISABLED=1
+      - MAIN_API_BASE_URL=${MAIN_API_BASE_URL}
+    ports:
+      - "30023:3000"
