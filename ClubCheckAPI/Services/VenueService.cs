@@ -19,14 +19,19 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
 
     public async Task<PublicVenueDto> CreateVenue(CreateVenueDto venueDto, CancellationToken ct)
     {
+        var address = venueDto.Address;
+        var zipCode = NormalizeAddressPart(address?.ZipCode);
+        var city = NormalizeAddressPart(address?.City);
+        var number = NormalizeAddressPart(address?.Number);
+
+        // Missing address fields are not identity. Comparing nullable columns directly
+        // makes NULL == NULL match every venue with an empty field, which groups
+        // unrelated events under the first venue created.
         var existingVenue = await context.Venues.FirstOrDefaultAsync(
-            v => v.Name == venueDto.Name || (venueDto.Address != null && ((v.Address.City == venueDto.Address.City &&
-                                                                           v.Address.Number ==
-                                                                           venueDto.Address.Number &&
-                                                                           v.Address.Number ==
-                                                                           venueDto.Address.Number) ||
-                                                                          v.Address.ZipCode ==
-                                                                          venueDto.Address.ZipCode))
+            v => v.Name == venueDto.Name ||
+                 (zipCode != null && v.Address!.ZipCode == zipCode) ||
+                 (city != null && number != null &&
+                  v.Address!.City == city && v.Address.Number == number)
             , ct);
 
         if (existingVenue is not null)
@@ -68,6 +73,16 @@ public class VenueService(ILogger<VenueService> logger, ClubCheckAPIContext cont
     public async Task DeleteVenue(int id, CancellationToken ct)
     {
         throw new NotImplementedException();
+    }
+
+    private static string? NormalizeAddressPart(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim() == "-")
+        {
+            return null;
+        }
+
+        return value.Trim();
     }
 
     private static PublicVenueDto ToDto(Venue v) => new PublicVenueDto()
