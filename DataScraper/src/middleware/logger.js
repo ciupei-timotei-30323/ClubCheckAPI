@@ -1,10 +1,10 @@
-export function getLoggerConfig(NODE_ENV) {
-    const env = NODE_ENV || 'development';
-    const isDev = env === 'development';
+export function getLoggerConfig() {
+    const env = String(process.env.NODE_ENV ?? 'development').trim().toLowerCase();
+    const isProd = env === 'production' || env === 'prod';
 
     return {
         level: 'info',
-        ...(isDev && {
+        ...(!isProd && {
             transport: {
                 target: 'pino-pretty',
                 options: {
