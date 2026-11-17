@@ -299,12 +299,17 @@ export function createStructuredDataExtractor({
             )
         }
 
-        log.info({ characters: inputText.length }, 'Structured data extraction started')
+        const prompt = buildExtractionPrompt({ text: inputText, sourceUrl, metadata })
+
+        log.info(
+            { characters: inputText.length, prompt },
+            'Gemini extraction prompt'
+        )
 
         const interaction = await ai.interactions.create({
             model,
             system_instruction: systemInstruction,
-            input: buildExtractionPrompt({ text: inputText, sourceUrl, metadata }),
+            input: prompt,
             response_format: [{
                 type: 'text',
                 mime_type: 'application/json',
@@ -316,6 +321,14 @@ export function createStructuredDataExtractor({
             },
             store
         })
+
+        log.info(
+            {
+                interactionId: interaction?.id ?? null,
+                output: interaction?.output_text ?? null
+            },
+            'Gemini extraction output'
+        )
 
         if (!interaction || interaction.status !== 'completed') {
             throw new StructuredDataExtractionError(
@@ -367,10 +380,10 @@ export function createStructuredDataExtractor({
         log.info(
             {
                 interactionId: result.interactionId,
-                events: result.structured.events.length,
-                venues: result.structured.venues.length,
-                artists: result.structured.artists.length,
-                genres: result.structured.genres.length,
+                events: result.structured.events,
+                venues: result.structured.venues,
+                artists: result.structured.artists,
+                genres: result.structured.genres,
                 usage: result.usage
             },
             'Structured data extraction completed'

@@ -114,6 +114,14 @@ test('structured extractor calls Gemini with the ClubCheckAPI schema and validat
     assert.match(request.input, /Test Event at Test Venue on 31 December 2026\./)
     assert.doesNotMatch(request.input, /====/)
 
+    const promptLog = logger.entries.find(([, message]) => message === 'Gemini extraction prompt')
+    assert.ok(promptLog)
+    assert.strictEqual(promptLog[2].prompt, request.input)
+
+    const outputLog = logger.entries.find(([, message]) => message === 'Gemini extraction output')
+    assert.ok(outputLog)
+    assert.strictEqual(outputLog[2].output, JSON.stringify(validStructuredData))
+
     assert.strictEqual(result.structured.events[0].name, 'Test Event')
     assert.strictEqual(result.structured.events[0].organizer, 'Test Promoter')
     assert.strictEqual(result.structured.events[0].posterUrl, 'https://example.com/poster.jpg')
