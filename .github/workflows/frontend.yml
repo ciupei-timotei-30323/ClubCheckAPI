@@ -70,15 +70,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ensure NEXT_PUBLIC_SITE_URL is configured
-        if: github.event_name != 'pull_request'
-        env:
-          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-        run: |
-          if [ -z "$SITE_URL" ]; then
-            echo "::error::Set the repository variable NEXT_PUBLIC_SITE_URL before deploying."
-            exit 1
-          fi
+#      - name: Ensure NEXT_PUBLIC_SITE_URL is configured
+#        if: github.event_name != 'pull_request'
+#        env:
+#          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+#        run: |
+#          if [ -z "$SITE_URL" ]; then
+#            echo "::error::Set the repository variable NEXT_PUBLIC_SITE_URL before deploying."
+#            exit 1
+#          fi
 
       - name: Compute lowercase image repository
         id: image
@@ -119,7 +119,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://clubcheck-frontend.whiteflower-b7c64b18.italynorth.azurecontainerapps.io' }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
