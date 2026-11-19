@@ -4,11 +4,16 @@
  */
 export function createScrapeIngestionPipeline({
     structuredDataExtractor,
+    cityGeocodingService,
     eventIngestionService,
     logger
 }) {
     if (!structuredDataExtractor?.extract) {
         throw new Error('createScrapeIngestionPipeline requires a structured data extractor')
+    }
+
+    if (!cityGeocodingService?.normalize) {
+        throw new Error('createScrapeIngestionPipeline requires a city geocoding service')
     }
 
     if (!eventIngestionService?.ingest) {
@@ -30,8 +35,19 @@ export function createScrapeIngestionPipeline({
             metadata
         })
 
-        await updateProgress({ stage: 'inferred', percent: 94 })
-        const ingestion = await eventIngestionService.ingest(inference.structured, {
+        await updateProgress({ stage: 'inferred', percent: 92 })
+        await updateProgress({ stage: 'geocoding', percent: 93 })
+        const normalizedStructured = await cityGeocodingService.normalize(
+            inference.structured,
+            { sourceUrl: url }
+        )
+        const normalizedInference = {
+            ...inference,
+            structured: normalizedStructured
+        }
+
+        await updateProgress({ stage: 'geocoded', percent: 94 })
+        const ingestion = await eventIngestionService.ingest(normalizedStructured, {
             sourceUrl: url,
             onProgress: updateProgress
         })
@@ -50,7 +66,7 @@ export function createScrapeIngestionPipeline({
         )
 
         return {
-            inference,
+            inference: normalizedInference,
             ingestion
         }
     }
