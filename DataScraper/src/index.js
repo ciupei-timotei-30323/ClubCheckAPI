@@ -14,6 +14,8 @@ import {createSourceScrapeService} from "./services/sourceScrapeService.js";
 import {createClubCheckApiClient} from "./clients/clubCheckApiClient.js";
 import {createMusicBrainzClient} from "./clients/musicBrainzClient.js";
 import {createScraperApiClient} from "./clients/scraperApiClient.js";
+import {createGeocodingApiClient} from "./clients/geocodingApiClient.js";
+import {createCityGeocodingService} from "./services/cityGeocodingService.js";
 import {createPageRepository} from "./repositories/pageRepository.js";
 import {createRateLimiter} from "./utils/rateLimiter.js";
 import {createTokensPerMinuteLimiter} from "./utils/tokensPerMinuteLimiter.js";
@@ -54,6 +56,8 @@ const groqTpmLimit = Number(process.env.GROQ_TPM_LIMIT || 8_000)
 
 const geminiApiKey = process.env.GEMINI_API_KEY || ''
 const geminiModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen'
+const geocodingApiUrl = process.env.NODE_GEOCODING_API_URL || 'https://geocoding-api.open-meteo.com/v1/search'
+const geocodingTimeoutMs = Number(process.env.NODE_GEOCODING_API_TIMEOUT_MS || 15_000)
 const clubCheckApiUrl = process.env.NODE_CLUBCHECK_API_URL || ''
 const clubCheckApiKey = process.env.NODE_CLUBCHECK_API_KEY || process.env.NODE_API_KEY || ''
 const clubCheckPostIntervalMs = Number(process.env.NODE_CLUBCHECK_POST_INTERVAL_MS || 60_000)
@@ -80,8 +84,21 @@ if (geminiApiKey) {
         model: geminiModel,
         logger: app.log
     })
+    const geocodingApiClient = createGeocodingApiClient({
+        httpClient: axios,
+        baseUrl: geocodingApiUrl,
+        timeoutMs: geocodingTimeoutMs,
+        logger: app.log
+    })
+    const cityGeocodingService = createCityGeocodingService({
+        geocodingApiClient,
+        logger: app.log
+    })
 
-    app.log.info({model: geminiModel}, 'Gemini structured-data extraction enabled')
+    app.log.info(
+        {model: geminiModel, geocodingApiUrl, geocodingTimeoutMs},
+        'Gemini structured-data extraction enabled'
+    )
 
     if (clubCheckApiUrl && clubCheckApiKey) {
         const musicBrainzRateLimiter = createRateLimiter({
@@ -119,6 +136,7 @@ if (geminiApiKey) {
 
         onMusicEvent = createScrapeIngestionPipeline({
             structuredDataExtractor: extractor,
+            cityGeocodingService,
             eventIngestionService,
             logger: app.log
         })
@@ -133,6 +151,7 @@ if (geminiApiKey) {
             {
                 clubCheckApiUrl,
                 clubCheckPostIntervalMs,
+                geocodingApiUrl,
                 musicBrainzApiUrl,
                 musicBrainzMinIntervalMs
             },
@@ -146,8 +165,14 @@ if (geminiApiKey) {
             const updateProgress = onProgress ?? (progress => job.updateProgress(progress))
             await updateProgress({stage: 'inferring', percent: 92})
             const inference = await extractor.extract({text, sourceUrl: url, metadata})
-            await updateProgress({stage: 'inferred', percent: 99})
-            return inference
+            await updateProgress({stage: 'inferred', percent: 92})
+            await updateProgress({stage: 'geocoding', percent: 93})
+            const structured = await cityGeocodingService.normalize(
+                inference.structured,
+                {sourceUrl: url}
+            )
+            await updateProgress({stage: 'geocoded', percent: 99})
+            return {...inference, structured}
         }
     }
 } else {
