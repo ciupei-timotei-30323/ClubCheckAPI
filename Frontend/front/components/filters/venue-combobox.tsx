@@ -10,7 +10,9 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox"
+import { InputGroupAddon } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import type { VenueFilterOption } from "@/lib/api/main/types"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
@@ -97,7 +99,16 @@ export function VenueCombobox({ value, items }: VenueComboboxProps) {
           showTrigger
           aria-busy={isPending}
           className={cn("w-full sm:w-64", isPending && "opacity-60")}
-        />
+        >
+          {isPending && (
+            <InputGroupAddon align="inline-start">
+              <Spinner
+                className="size-3.5"
+                aria-label={strings.states.loading}
+              />
+            </InputGroupAddon>
+          )}
+        </ComboboxInput>
         <ComboboxContent>
           <ComboboxEmpty>{strings.filters.noVenueResults}</ComboboxEmpty>
           <ComboboxList>

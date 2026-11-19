@@ -16,6 +16,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
 
@@ -77,7 +78,14 @@ export function SearchInput() {
       className={cn("h-9 w-full", isPending && "opacity-60")}
     >
       <InputGroupAddon align="inline-start">
-        <SearchIcon aria-hidden="true" />
+        {isPending ? (
+          <Spinner
+            className="size-4"
+            aria-label={strings.states.loading}
+          />
+        ) : (
+          <SearchIcon aria-hidden="true" />
+        )}
       </InputGroupAddon>
       <InputGroupInput
         ref={inputRef}
@@ -111,8 +119,13 @@ export function SearchInput() {
 export function SearchInputFallback() {
   return (
     <div
-      aria-hidden="true"
-      className="h-9 w-full rounded-md border border-input bg-muted/30"
-    />
+      aria-busy="true"
+      className="relative h-9 w-full rounded-md border border-input bg-muted/30"
+    >
+      <Spinner
+        className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-label={strings.states.loading}
+      />
+    </div>
   )
 }

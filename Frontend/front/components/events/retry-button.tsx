@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { RefreshCwIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { strings } from "@/lib/i18n/ro"
 
 type RetryButtonProps = {
@@ -31,10 +32,11 @@ export function RetryButton({ onRetry }: RetryButtonProps = {}) {
       disabled={isPending}
       aria-busy={isPending}
     >
-      <RefreshCwIcon
-        className={isPending ? "animate-spin" : undefined}
-        aria-hidden="true"
-      />
+      {isPending ? (
+        <Spinner className="size-4" aria-label={strings.states.loading} />
+      ) : (
+        <RefreshCwIcon aria-hidden="true" />
+      )}
       {strings.states.retry}
     </Button>
   )

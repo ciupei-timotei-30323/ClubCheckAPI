@@ -10,7 +10,9 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox"
+import { InputGroupAddon } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import type { EventFilterOption } from "@/lib/api/main/types"
 import { cn } from "@/lib/utils"
 import { strings } from "@/lib/i18n/ro"
@@ -59,7 +61,16 @@ export function CityCombobox({ value, items }: CityComboboxProps) {
           showTrigger
           aria-busy={isPending}
           className={cn("w-full sm:w-44", isPending && "opacity-60")}
-        />
+        >
+          {isPending && (
+            <InputGroupAddon align="inline-start">
+              <Spinner
+                className="size-3.5"
+                aria-label={strings.states.loading}
+              />
+            </InputGroupAddon>
+          )}
+        </ComboboxInput>
         <ComboboxContent>
           <ComboboxEmpty>{strings.filters.noCityResults}</ComboboxEmpty>
           <ComboboxList>

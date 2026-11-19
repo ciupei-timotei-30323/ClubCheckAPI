@@ -1,4 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
+import { strings } from "@/lib/i18n/ro"
 
 import { EventRelatedSkeleton } from "./event-related-skeleton"
 
@@ -12,7 +14,15 @@ export function EventDetailSkeleton() {
       </div>
 
       <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] xl:gap-12">
-        <Skeleton className="mx-auto aspect-[2/3] w-full max-w-[360px] rounded-lg lg:mx-0 lg:max-w-none" />
+        <div className="relative mx-auto w-full max-w-[360px] lg:mx-0 lg:max-w-none">
+          <Skeleton className="aspect-[2/3] w-full rounded-lg" />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Spinner
+              className="size-6 text-muted-foreground"
+              aria-label={strings.states.loading}
+            />
+          </div>
+        </div>
 
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-3">
@@ -54,7 +64,7 @@ export function EventDetailSkeleton() {
         </div>
       </div>
 
-      <EventRelatedSkeleton />
+      <EventRelatedSkeleton showStatus={false} />
     </div>
   )
 }

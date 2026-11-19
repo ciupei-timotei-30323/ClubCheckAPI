@@ -3,14 +3,17 @@ import { EVENTS_PAGE_SIZE, type EventFilters } from "@/lib/events/filters"
 
 import type { EventsQuery } from "./types"
 
-export function toEventsQuery(filters: EventFilters): EventsQuery {
+export function toEventsQuery(
+  filters: EventFilters,
+  searchGenres: readonly string[] = []
+): EventsQuery {
   const query: EventsQuery = {
     IsActive: true,
     Page: filters.page,
     PageSize: EVENTS_PAGE_SIZE,
   }
 
-  if (filters.q) {
+  if (filters.q && searchGenres.length === 0) {
     query.Search = filters.q
   }
 
@@ -22,8 +25,10 @@ export function toEventsQuery(filters: EventFilters): EventsQuery {
     query.VenueName = filters.venue
   }
 
-  if (filters.genres.length > 0) {
-    query.GenresNames = filters.genres
+  const genres = [...new Set([...filters.genres, ...searchGenres])]
+
+  if (genres.length > 0) {
+    query.GenresNames = genres
   }
 
   if (filters.from) {

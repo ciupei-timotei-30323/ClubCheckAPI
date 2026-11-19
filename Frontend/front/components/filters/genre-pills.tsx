@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 
+import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { toInteger } from "@/lib/api/main/normalize"
 import type { EventFilterOption } from "@/lib/api/main/types"
@@ -45,26 +46,34 @@ export function GenrePills({ value, items }: GenrePillsProps) {
   }
 
   return (
-    <ToggleGroup
-      multiple
-      value={value}
-      onValueChange={(next) => {
-        updateFilters({ genres: next })
-      }}
-      aria-label={strings.filters.genres}
-      variant="outline"
-      size="sm"
-      className={cn("flex flex-wrap gap-1.5", isPending && "opacity-60")}
-    >
-      {options.map((genre) => (
-        <ToggleGroupItem
-          key={genre}
-          value={genre}
-          className="rounded-full px-3 text-xs aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-        >
-          {genre}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <div className="flex flex-wrap items-center gap-2">
+      <ToggleGroup
+        multiple
+        value={value}
+        onValueChange={(next) => {
+          updateFilters({ genres: next })
+        }}
+        aria-label={strings.filters.genres}
+        variant="outline"
+        size="sm"
+        className={cn("flex flex-wrap gap-1.5", isPending && "opacity-60")}
+      >
+        {options.map((genre) => (
+          <ToggleGroupItem
+            key={genre}
+            value={genre}
+            className="rounded-full px-3 text-xs aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+          >
+            {genre}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {isPending && (
+        <Spinner
+          className="size-4 text-muted-foreground"
+          aria-label={strings.states.loading}
+        />
+      )}
+    </div>
   )
 }

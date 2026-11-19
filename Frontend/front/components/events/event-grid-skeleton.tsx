@@ -1,5 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import { EVENTS_PAGE_SIZE } from "@/lib/events/filters"
+import { strings } from "@/lib/i18n/ro"
 
 type EventGridSkeletonProps = {
   count?: number
@@ -14,7 +16,13 @@ export function EventGridSkeleton({
     <div>
       {showHeader && (
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-5 w-32" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-32" />
+            <Spinner
+              className="size-4 text-muted-foreground"
+              aria-label={strings.states.loading}
+            />
+          </div>
           <Skeleton className="h-6 w-64" />
         </div>
       )}

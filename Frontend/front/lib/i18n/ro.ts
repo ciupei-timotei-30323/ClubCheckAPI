@@ -13,14 +13,15 @@ export const strings = {
   },
   header: {
     homeLabel: "ClubCheck — pagina principală",
+    backHome: "Înapoi la pagina principală",
   },
   auth: {
     signIn: "Autentificare",
   },
   filters: {
     label: "Filtre",
-    searchLabel: "Caută evenimente",
-    searchPlaceholder: "Caută eveniment, artist sau locație",
+    searchLabel: "Caută evenimente, artiști, locații sau genuri",
+    searchPlaceholder: "Caută eveniment, artist, locație sau gen",
     city: "Oraș",
     cityPlaceholder: "Toate orașele",
     venue: "Locație",
@@ -56,6 +57,7 @@ export const strings = {
     next: "Pagina următoare",
   },
   states: {
+    loading: "Se încarcă...",
     emptyTitle: "Niciun eveniment găsit",
     emptyDescription: "Încearcă să modifici filtrele sau caută altceva.",
     emptyPageTitle: "Pagina nu există",
