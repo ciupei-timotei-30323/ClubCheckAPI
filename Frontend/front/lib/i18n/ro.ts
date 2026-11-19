@@ -13,6 +13,7 @@ export const strings = {
   },
   header: {
     homeLabel: "ClubCheck — pagina principală",
+    backHome: "Înapoi la pagina principală",
   },
   auth: {
     signIn: "Autentificare",
