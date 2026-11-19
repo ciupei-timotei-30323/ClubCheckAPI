@@ -56,6 +56,7 @@ export const strings = {
     next: "Pagina următoare",
   },
   states: {
+    loading: "Se încarcă...",
     emptyTitle: "Niciun eveniment găsit",
     emptyDescription: "Încearcă să modifici filtrele sau caută altceva.",
     emptyPageTitle: "Pagina nu există",

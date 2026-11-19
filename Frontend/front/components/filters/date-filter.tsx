@@ -11,6 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Spinner } from "@/components/ui/spinner"
 import {
   formatDateOnly,
   formatDateRange,
@@ -88,7 +89,14 @@ export function DateFilter({ from, to }: DateFilterProps) {
               isPending && "opacity-60"
             )}
           >
-            <CalendarIcon className="size-4 shrink-0" aria-hidden="true" />
+            {isPending ? (
+              <Spinner
+                className="size-4 shrink-0"
+                aria-label={strings.states.loading}
+              />
+            ) : (
+              <CalendarIcon className="size-4 shrink-0" aria-hidden="true" />
+            )}
             <span className="truncate">{label}</span>
           </Button>
         }
