@@ -4,11 +4,10 @@ Event discovery for concerts, festivals, and club nights: a scraper ingests venu
 
 ## Screenshots
 
-> Add UI screenshots under `docs/screenshots/` and replace the placeholders below.
+![Screenshot1](/docs/calendar.png)
 
-| Event listing | Event detail | Filters |
-| --- | --- | --- |
-| _TBD_ | _TBD_ | _TBD_ |
+
+![Screenshot2](/docs/searchBar.png)
 
 ## End-to-End Architecture
 
