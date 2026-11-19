@@ -3,8 +3,10 @@ import { cacheLife, cacheTag } from "next/cache"
 import { notFound } from "next/navigation"
 
 import type { EventFilters } from "@/lib/events/filters"
+import { findMatchingGenres } from "@/lib/events/genres"
 
 import { apiFetch } from "./client"
+import { fetchFacets } from "./facets"
 import { toInteger } from "./normalize"
 import { toEventsQuery } from "./query"
 import type { ApiResult } from "./result"
@@ -18,7 +20,10 @@ export async function fetchEvents(
   filters: EventFilters,
   options: FetchEventsOptions = {}
 ): Promise<ApiResult<EventsPage>> {
-  const query = { ...toEventsQuery(filters) }
+  const searchGenres = filters.q
+    ? await resolveSearchGenres(filters.q)
+    : []
+  const query = { ...toEventsQuery(filters, searchGenres) }
 
   if (options.pageSize !== undefined) {
     query.PageSize = options.pageSize
@@ -91,6 +96,20 @@ export function normalizeSlug(slug: string): string {
     return decodeURIComponent(slug)
   } catch {
     return slug
+  }
+}
+
+async function resolveSearchGenres(query: string): Promise<string[]> {
+  try {
+    const facets = await fetchFacets()
+
+    return findMatchingGenres(
+      query,
+      (facets.genres ?? []).map((genre) => genre.name)
+    )
+  } catch {
+    // A failed facet lookup should not break regular text search.
+    return []
   }
 }
 

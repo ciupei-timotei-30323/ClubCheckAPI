@@ -20,8 +20,8 @@ export const strings = {
   },
   filters: {
     label: "Filtre",
-    searchLabel: "Caută evenimente",
-    searchPlaceholder: "Caută eveniment, artist sau locație",
+    searchLabel: "Caută evenimente, artiști, locații sau genuri",
+    searchPlaceholder: "Caută eveniment, artist, locație sau gen",
     city: "Oraș",
     cityPlaceholder: "Toate orașele",
     venue: "Locație",
